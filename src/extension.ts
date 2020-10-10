@@ -2,14 +2,8 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import * as csvParse from "csv-parse/lib/sync";
-
-// One filter corresponds to one line in the configuration file
-type Filter = {
-    isHighlighted: boolean;
-    isShown: boolean;
-    regex: RegExp;
-    color: string;
-};
+import { Filter, filterLines } from "./utils";
+import { FocusFoldingRangeProvider } from "./foldingrangeprovider";
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -38,7 +32,7 @@ export function activate(context: vscode.ExtensionContext) {
                     return output.map((row) => ({
                         isHighlighted: row[0] === "T",
                         isShown: row[1] === "T",
-                        regex: new RegExp(row[2], "g"),
+                        regex: new RegExp(row[2]),
                         color: row[3],
                     }));
                 }, console.log)
@@ -50,21 +44,13 @@ export function activate(context: vscode.ExtensionContext) {
                         if (!filter.isHighlighted) {
                             return;
                         }
-                        let regex = filter.regex;
-                        let decorationsArray: vscode.DecorationOptions[] = [];
-                        for (
-                            let lineIdx = 0;
-                            lineIdx < sourceCodeArr.length;
-                            lineIdx++
-                        ) {
-                            if (regex.test(sourceCodeArr[lineIdx])) {
-                                let range = new vscode.Range(
-                                    new vscode.Position(lineIdx, 0),
-                                    new vscode.Position(lineIdx, 20)
-                                );
-                                decorationsArray.push({ range });
-                            }
-                        }
+                        const lineNumbers = filterLines(sourceCodeArr, filter);
+                        const decorationsArray = lineNumbers.map((lineIdx) => {
+                            return new vscode.Range(
+                                new vscode.Position(lineIdx, 0),
+                                new vscode.Position(lineIdx, 20)
+                            );
+                        });
                         let decorationType = vscode.window.createTextEditorDecorationType(
                             {
                                 backgroundColor: filter.color,
@@ -72,9 +58,19 @@ export function activate(context: vscode.ExtensionContext) {
                             }
                         );
                         editor.setDecorations(decorationType, decorationsArray);
+                        // decorationType.dispose();
                     });
+                    vscode.languages.registerFoldingRangeProvider(
+                        {
+                            pattern: "*",
+                        },
+                        new FocusFoldingRangeProvider(filterArr)
+                    );
+                    vscode.commands.executeCommand("editor.foldAll");
                 }, console.log)
-                .then(() => console.log("FINISHED"), console.log);
+                .then(() => {
+                    console.log("FINISHED");
+                }, console.log);
 
             //
         }
