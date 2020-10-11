@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import * as csvParse from "csv-parse/lib/sync";
 import { Filter, filterLines } from "./utils";
 import { FocusFoldingRangeProvider } from "./foldingrangeprovider";
+import { FilterTreeViewProvider } from "./filterTreeViewProvider";
 
 async function init(uri: vscode.Uri): Promise<Filter[]> {
     let textDoc = await vscode.workspace.openTextDocument(uri);
@@ -27,6 +28,11 @@ export function activate(context: vscode.ExtensionContext) {
     let inFocusMode = false;
 
     init(uri).then(filterArr => {
+        vscode.window.registerTreeDataProvider(
+            'filters',
+            new FilterTreeViewProvider(filterArr)
+          );
+
         // register commands
         let disposable = vscode.commands.registerCommand(
             "log-analysis.applyHighlight",

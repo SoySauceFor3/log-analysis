@@ -10,16 +10,24 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:log-analysis.addFilter"
+		"onCommand:log-analysis.applyHighlight"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "log-analysis.addFilter",
-				"title": "Add Filter"
+				"command": "log-analysis.applyHighlight",
+				"title": "Apply Highlight"
 			}
-		]
+		],
+		"views": {
+      "explorer": [
+        {
+          "id": "filters",
+          "name": "Filters"
+        }
+      ]
+    }
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
