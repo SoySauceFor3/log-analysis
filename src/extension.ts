@@ -14,6 +14,7 @@ async function init(uri: vscode.Uri): Promise<Filter[]> {
         isShown: row[1] === "T",
         regex: new RegExp(row[2]),
         color: row[3],
+        id: `${Math.random()}`
     }));
 }
 
@@ -62,13 +63,6 @@ export function activate(context: vscode.ExtensionContext) {
                             editor.setDecorations(decorationType, decorationsArray);
                             // decorationType.dispose();
                         });
-                        vscode.languages.registerFoldingRangeProvider(
-                            {
-                                pattern: "*",
-                            },
-                            new FocusFoldingRangeProvider(filterArr)
-                        );
-                        vscode.commands.executeCommand("editor.foldAll");
                     }, console.log)
                     .then(() => {
                         console.log("FINISHED");
@@ -87,15 +81,28 @@ export function activate(context: vscode.ExtensionContext) {
                     //toggle off focus mode, so unfold everything
                     vscode.commands.executeCommand("editor.unfoldAll");
                 } else {
+                    vscode.languages.registerFoldingRangeProvider(
+                        {
+                            pattern: "*",
+                        },
+                        new FocusFoldingRangeProvider(filterArr)
+                    );
                     //toggle on focus mode, so fold everything
                     vscode.commands.executeCommand("editor.foldAll");
                     
                 }
                 inFocusMode = !inFocusMode;
 
-            })
-        ;
+            }
+        );
         context.subscriptions.push(disposable2);
+
+        let disposable3 = vscode.commands.registerCommand(
+            "log-analysis.deleteFilter",
+            (filter: vscode.TreeItem) => {
+            }
+        );
+        context.subscriptions.push(disposable3);
             
     });
 }

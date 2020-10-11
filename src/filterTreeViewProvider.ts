@@ -22,7 +22,7 @@ export class FilterTreeViewProvider implements vscode.TreeDataProvider<FilterIte
         if (element) {
             return [];
         } else { // root
-            return this.filterArr.map(filter => new FilterItem(filter.regex.toString()));
+            return this.filterArr.map(filter => new FilterItem(filter.regex.toString(), filter.id));
         }
     }
 
@@ -30,10 +30,12 @@ export class FilterTreeViewProvider implements vscode.TreeDataProvider<FilterIte
 
 export class FilterItem extends vscode.TreeItem {
     constructor(
-    public readonly label: string,
+        public readonly label: string,
+        public readonly id: string,
     ) {
         super(label);
+        this.id = id;
     }
 
-    contextValue = 'filter';
+    contextValue: 'lit-visible' | 'unlit-visible' | 'lit-invisible' | 'unlit-invisible' = 'unlit-visible';
 }

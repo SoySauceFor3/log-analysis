@@ -4,6 +4,7 @@ export type Filter = {
     isShown: boolean;
     regex: RegExp;
     color: string;
+    id: string;
 };
 
 // returns an array of line numbers that match the filter
