@@ -26,6 +26,12 @@ export class FilterTreeViewProvider implements vscode.TreeDataProvider<FilterIte
         }
     }
 
+    private _onDidChangeTreeData: vscode.EventEmitter<FilterItem | undefined> = new vscode.EventEmitter<FilterItem | undefined>();
+    readonly onDidChangeTreeData: vscode.Event<FilterItem | undefined> = this._onDidChangeTreeData.event;
+    
+    refresh(): void {
+        this._onDidChangeTreeData.fire(undefined);
+      }
 }
 
 export class FilterItem extends vscode.TreeItem {

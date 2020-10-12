@@ -27,84 +27,79 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     let inFocusMode = false;
-
-    init(uri).then(filterArr => {
-        vscode.window.registerTreeDataProvider(
-            'filters',
-            new FilterTreeViewProvider(filterArr)
-          );
+    let filterArr: Filter[] = [{
+        isHighlighted: true,
+        isShown: true,
+        regex: new RegExp("abc"),
+        color: "#abcabc",
+        id: `${Math.random()}`
+    }];
+    const filterTreeViewProvider = new FilterTreeViewProvider(filterArr);
+    vscode.window.registerTreeDataProvider('filters', filterTreeViewProvider);
 
         // register commands
-        let disposable = vscode.commands.registerCommand(
-            "log-analysis.applyHighlight",
-            () => {
-                init(uri)
-                    .then((filterArr) => {
-                        let editor = vscode.window.activeTextEditor!;
-                        let sourceCode = editor.document.getText();
-                        const sourceCodeArr = sourceCode.split("\n");
-                        filterArr.forEach((filter) => {
-                            if (!filter.isHighlighted) {
-                                return;
-                            }
-                            const lineNumbers = filterLines(sourceCodeArr, filter);
-                            const decorationsArray = lineNumbers.map((lineIdx) => {
-                                return new vscode.Range(
-                                    new vscode.Position(lineIdx, 0),
-                                    new vscode.Position(lineIdx, 20)
-                                );
-                            });
-                            let decorationType = vscode.window.createTextEditorDecorationType(
-                                {
-                                    backgroundColor: filter.color,
-                                    isWholeLine: true,
-                                }
-                            );
-                            editor.setDecorations(decorationType, decorationsArray);
-                            // decorationType.dispose();
-                        });
-                    }, console.log)
-                    .then(() => {
-                        console.log("FINISHED");
-                    }, console.log);
-
-                //
-            }
-        );
-
-        context.subscriptions.push(disposable);
-
-        let disposable2 = vscode.commands.registerCommand(
-            "log-analysis.toggleFocusMode",
-            () => {
-                if (inFocusMode) {
-                    //toggle off focus mode, so unfold everything
-                    vscode.commands.executeCommand("editor.unfoldAll");
-                } else {
-                    vscode.languages.registerFoldingRangeProvider(
+    let disposableApplyHighlight = vscode.commands.registerCommand(
+        "log-analysis.applyHighlight",
+        () => {
+                let editor = vscode.window.activeTextEditor!;
+                let sourceCode = editor.document.getText();
+                const sourceCodeArr = sourceCode.split("\n");
+                filterArr.forEach((filter) => {
+                    if (!filter.isHighlighted) {
+                        return;
+                    }
+                    const lineNumbers = filterLines(sourceCodeArr, filter);
+                    const decorationsArray = lineNumbers.map((lineIdx) => {
+                        return new vscode.Range(
+                            new vscode.Position(lineIdx, 0),
+                            new vscode.Position(lineIdx, 20)
+                        );
+                    });
+                    let decorationType = vscode.window.createTextEditorDecorationType(
                         {
-                            pattern: "*",
-                        },
-                        new FocusFoldingRangeProvider(filterArr)
+                            backgroundColor: filter.color,
+                            isWholeLine: true,
+                        }
                     );
-                    //toggle on focus mode, so fold everything
-                    vscode.commands.executeCommand("editor.foldAll");
-                    
-                }
-                inFocusMode = !inFocusMode;
+                    editor.setDecorations(decorationType, decorationsArray);
+                    });
+        }
+    );
 
-            }
-        );
-        context.subscriptions.push(disposable2);
+    context.subscriptions.push(disposableApplyHighlight);
 
-        let disposable3 = vscode.commands.registerCommand(
-            "log-analysis.deleteFilter",
-            (filter: vscode.TreeItem) => {
+    let disposableToggleFocusMode = vscode.commands.registerCommand(
+        "log-analysis.toggleFocusMode",
+        () => {
+            if (inFocusMode) {
+                //toggle off focus mode, so unfold everything
+                vscode.commands.executeCommand("editor.unfoldAll");
+            } else {
+                vscode.languages.registerFoldingRangeProvider(
+                    {
+                        pattern: "*",
+                    },
+                    new FocusFoldingRangeProvider(filterArr)
+                );
+                //toggle on focus mode, so fold everything
+                vscode.commands.executeCommand("editor.foldAll");
+                
             }
-        );
-        context.subscriptions.push(disposable3);
-            
-    });
+            inFocusMode = !inFocusMode;
+        }
+    );
+    context.subscriptions.push(disposableToggleFocusMode);
+
+    let disposibleDeleteFilter = vscode.commands.registerCommand(
+        "log-analysis.deleteFilter",
+        (filter: vscode.TreeItem) => {
+            const id = filter.id;
+            const deleteIndex = filterArr.findIndex(filter => (filter.id === id));
+            filterArr.splice(deleteIndex, 1);
+            filterTreeViewProvider.refresh();
+        }
+    );
+    context.subscriptions.push(disposibleDeleteFilter);
 }
 
 // this method is called when your extension is deactivated
