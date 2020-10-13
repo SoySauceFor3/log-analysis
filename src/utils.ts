@@ -1,3 +1,5 @@
+import * as vscode from "vscode";
+
 // One filter corresponds to one line in the configuration file
 export type Filter = {
     isHighlighted: boolean;
@@ -5,6 +7,7 @@ export type Filter = {
     regex: RegExp;
     color: string;
     id: string;
+    iconPath: vscode.Uri;
 };
 
 // returns an array of line numbers that match the filter

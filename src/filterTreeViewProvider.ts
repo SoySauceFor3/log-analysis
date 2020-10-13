@@ -5,14 +5,7 @@ import { Filter } from "./utils";
 
 export class FilterTreeViewProvider implements vscode.TreeDataProvider<FilterItem> {
 
-    // private _onDidChangeTreeData: vscode.EventEmitter<Dependency | undefined | void> = new vscode.EventEmitter<Dependency | undefined | void>();
-    // readonly onDidChangeTreeData: vscode.Event<Dependency | undefined | void> = this._onDidChangeTreeData.event;
-
     constructor(private filterArr:Filter[]) {}
-
-    // refresh(): void {
-    //     this._onDidChangeTreeData.fire();
-    // }
 
     getTreeItem(element: FilterItem): vscode.TreeItem {
         return element;
@@ -22,7 +15,7 @@ export class FilterTreeViewProvider implements vscode.TreeDataProvider<FilterIte
         if (element) {
             return [];
         } else { // root
-            return this.filterArr.map(filter => new FilterItem(filter.regex.toString(), filter.id));
+            return this.filterArr.map(filter => new FilterItem(filter));
         }
     }
 
@@ -35,13 +28,31 @@ export class FilterTreeViewProvider implements vscode.TreeDataProvider<FilterIte
 }
 
 export class FilterItem extends vscode.TreeItem {
+    // waitForFile: boolean;
+
     constructor(
-        public readonly label: string,
-        public readonly id: string,
+        filter: Filter,
     ) {
-        super(label);
-        this.id = id;
+        super(filter.regex.toString());
+        this.label = filter.regex.toString();
+        this.id = filter.id;
+        this.iconPath = filter.iconPath;
+
+
+        if (filter.isHighlighted) {
+            if (filter.isShown) {
+                this.contextValue = 'lit-visible';
+            } else {
+                this.contextValue = 'lit-invisible';
+            }
+        } else {
+            if (filter.isShown) {
+                this.contextValue = 'unlit-visible';
+            } else {
+                this.contextValue = 'unlit-invisible';
+            }
+        }
     }
 
-    contextValue: 'lit-visible' | 'unlit-visible' | 'lit-invisible' | 'unlit-invisible' = 'unlit-visible';
+    contextValue: 'lit-visible' | 'unlit-visible' | 'lit-invisible' | 'unlit-invisible';
 }

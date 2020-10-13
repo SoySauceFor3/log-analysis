@@ -36,6 +36,11 @@
 				"icon": "$(eye-closed)"
 			},
 			{
+				"command": "log-analysis.toggleFocusMode",
+				"title": "Toggle Focus Mode",
+				"icon": "$(symbol-keyword)"
+			},
+			{
 				"command": "log-analysis.deleteFilter",
 				"title": "Delete This Filter",
 				"icon": "$(dialog-close)"
@@ -44,11 +49,6 @@
 				"command": "log-analysis.editFilter",
 				"title": "Edit This Filter", 
 				"icon": "$(edit)"
-			},
-			{
-				"command": "log-analysis.toggleFocusMode",
-				"title": "Toggle Focus Mode",
-				"icon": "$(symbol-keyword)"
 			},
 			{
 				"command": "log-analysis.addFilter",
