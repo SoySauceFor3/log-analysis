@@ -22,3 +22,7 @@ export function filterLines(sourceCodeArr: string[], filter: Filter): number[] {
     }
     return lineNumbers;
 }
+
+export function generateRandomColor(): string {
+    return `hsl(${Math.floor(360 * Math.random())}, 40%, 40%)`;
+}

@@ -2,8 +2,8 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import * as csvParse from "csv-parse/lib/sync";
-import { Filter, filterLines } from "./utils";
-import { FocusFoldingRangeProvider } from "./foldingrangeprovider";
+import { Filter, filterLines, generateRandomColor } from "./utils";
+import { FocusFoldingRangeProvider } from "./foldingRangeProvider";
 import { FilterTreeViewProvider } from "./filterTreeViewProvider";
 
 async function init(uri: vscode.Uri): Promise<Filter[]> {
@@ -69,14 +69,60 @@ export function activate(context: vscode.ExtensionContext) {
         });
     }
 
+    let disposableFoldingRange: vscode.Disposable; 
+    function refreshFolding(): void {
+        if (inFocusMode) {
+            vscode.commands.executeCommand("editor.unfoldAll");
+            disposableFoldingRange.dispose();
+            disposableFoldingRange = vscode.languages.registerFoldingRangeProvider(
+                {
+                    pattern: "*",
+                },
+                new FocusFoldingRangeProvider(filterArr)
+            );
+            //toggle on focus mode, so fold everything
+            vscode.commands.executeCommand("editor.foldAll");
+        }
+    }
+    let disposableEnableVisibility = vscode.commands.registerCommand(
+        "log-analysis.enableVisibility",
+        (filterTreeItem: vscode.TreeItem) => {
+            const id = filterTreeItem.id;
+            const filter = filterArr.find(filter => (filter.id === id));
+            filter!.isShown = true;
+            // filter!.iconPath = generateSvgUri(filter!.id, filter!.isHighlighted);
+            // writeSvgContent(filter!, filterTreeViewProvider);
+            filterTreeViewProvider.refresh();
+
+            refreshFolding();
+            
+        }
+    );
+    context.subscriptions.push(disposableEnableVisibility);
+
+    let disposableDisableVisibility = vscode.commands.registerCommand(
+        "log-analysis.disableVisibility",
+        (filterTreeItem: vscode.TreeItem) => {
+            const id = filterTreeItem.id;
+            const filter = filterArr.find(filter => (filter.id === id));
+            filter!.isShown = false;
+            // filter!.iconPath = generateSvgUri(filter!.id, filter!.isHighlighted);
+            // writeSvgContent(filter!, filterTreeViewProvider);
+            filterTreeViewProvider.refresh();
+            refreshFolding();
+        }
+    );
+    context.subscriptions.push(disposableEnableVisibility);
+
     let disposableToggleFocusMode = vscode.commands.registerCommand(
         "log-analysis.toggleFocusMode",
         () => {
             if (inFocusMode) {
                 //toggle off focus mode, so unfold everything
                 vscode.commands.executeCommand("editor.unfoldAll");
+                disposableFoldingRange.dispose();
             } else {
-                vscode.languages.registerFoldingRangeProvider(
+                disposableFoldingRange = vscode.languages.registerFoldingRangeProvider(
                     {
                         pattern: "*",
                     },
@@ -91,7 +137,6 @@ export function activate(context: vscode.ExtensionContext) {
     );
     context.subscriptions.push(disposableToggleFocusMode);
 
-    // deleteFilter
     let disposibleDeleteFilter = vscode.commands.registerCommand(
         "log-analysis.deleteFilter",
         (filterTreeItem: vscode.TreeItem) => {
@@ -103,10 +148,6 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
     context.subscriptions.push(disposibleDeleteFilter);
-
-    function randColor(): string {
-        return `hsl(${Math.floor(360 * Math.random())}, 40%, 40%)`;
-    }
 
     let disposibleAddFilter = vscode.commands.registerCommand(
         "log-analysis.addFilter",
@@ -123,13 +164,14 @@ export function activate(context: vscode.ExtensionContext) {
                     isHighlighted: true, 
                     isShown: true, 
                     regex: new RegExp(regexStr),
-                    color: randColor(),
+                    color: generateRandomColor(),
                     id: `${Math.random()}`,
                     iconPath: generateSvgUri(id, true)
                 };
                 filterArr.push(filter);
                 writeSvgContent(filter, filterTreeViewProvider);
                 applyHighlight();
+                refreshFolding();
             });
         }
     );
@@ -150,6 +192,7 @@ export function activate(context: vscode.ExtensionContext) {
                 filter!.regex = new RegExp(regexStr);
                 filterTreeViewProvider.refresh();
                 applyHighlight();
+                refreshFolding();
             });
         }
     );
@@ -164,6 +207,7 @@ export function activate(context: vscode.ExtensionContext) {
             filter!.iconPath = generateSvgUri(filter!.id, filter!.isHighlighted);
             writeSvgContent(filter!, filterTreeViewProvider);
             applyHighlight();
+            refreshFolding();
         }
     );
     context.subscriptions.push(disposibleEnableHighlight);

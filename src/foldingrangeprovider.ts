@@ -36,6 +36,7 @@ export class FocusFoldingRangeProvider implements vscode.FoldingRangeProvider {
         foldingRanges.push(
             new vscode.FoldingRange(lastShownLine, sourceCodeArr.length - 1)
         );
+
         return foldingRanges;
     }
 }
