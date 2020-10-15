@@ -54,6 +54,14 @@
 				"command": "log-analysis.addFilter",
 				"title": "Add a Filter",
 				"icon": "$(plus)"
+			},
+			{
+				"command": "log-analysis.export",
+				"title": "Export"
+			},
+			{
+				"command": "log-analysis.import",
+				"title": "Import"
 			}
 		],
 		"menus": {
@@ -99,6 +107,14 @@
 					"command": "log-analysis.toggleFocusMode",
 					"when": "view == filters",
 					"group": "navigation"
+				},
+				{
+					"command": "log-analysis.import",
+					"when": "view == filters"
+				},
+				{
+					"command": "log-analysis.export",
+					"when": "view == filters"
 				}
 			]
 

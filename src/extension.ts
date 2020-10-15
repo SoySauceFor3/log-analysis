@@ -2,6 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import * as csvParse from "csv-parse/lib/sync";
+import * as path from 'path';
 import { Filter, filterLines, generateRandomColor } from "./utils";
 import { FocusFoldingRangeProvider } from "./foldingRangeProvider";
 import { FilterTreeViewProvider } from "./filterTreeViewProvider";
@@ -83,6 +84,75 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.commands.executeCommand("editor.foldAll");
         }
     }
+
+    let disposableExport = vscode.commands.registerCommand(
+        "log-analysis.export", 
+        () => {
+            const content = JSON.stringify(filterArr.map(filter => {
+                return {
+                    regexText: filter.regex.source,
+                    color: filter.color,
+                    isHighlighted: filter.isHighlighted,
+                    isShown: filter.isShown,
+                };
+            }));
+            vscode.workspace.openTextDocument({
+                content: content,
+                language: "json"
+            });
+    });
+    context.subscriptions.push(disposableExport);
+
+    let disposableImport = vscode.commands.registerCommand(
+        "log-analysis.import", 
+        () => {
+            vscode.window.showOpenDialog({
+                canSelectFiles: true, 
+                canSelectMany: false, 
+                filters: {
+                    "Json": ["json"]
+                }
+            }).then(uriArr => {
+                if (!uriArr) {
+                    return;
+                }
+
+                return vscode.workspace.openTextDocument(uriArr[0]);
+            }).then(textDocument => {
+                const text = textDocument!.getText();//.replace(/\s+/g, '');
+
+                const parsed = JSON.parse(text);
+
+                if (typeof parsed !== "object") {
+                    return;
+                }
+                const array = parsed as any[];
+                array.forEach((filterText) => {
+                    if (
+                        (typeof filterText.regexText === "string") &&
+                        (typeof filterText.color === "string") &&
+                        (typeof filterText.isHighlighted === "boolean") &&
+                        (typeof filterText.isShown === "boolean")
+                    ) {
+                        const id = `${Math.random()}`;
+                        const filter = {
+                            regex: new RegExp(filterText.regexText),
+                            color: filterText.color as string,
+                            isHighlighted: filterText.isHighlighted as boolean,
+                            isShown: filterText.isShown as boolean,
+                            id,
+                            iconPath: generateSvgUri(id, filterText.isHighlighted)
+                        };
+                        filterArr.push(filter);
+                        writeSvgContent(filter, filterTreeViewProvider);
+                    }
+                });
+                applyHighlight();
+                refreshFolding();
+            });
+    });
+    context.subscriptions.push(disposableImport);
+
     let disposableEnableVisibility = vscode.commands.registerCommand(
         "log-analysis.enableVisibility",
         (filterTreeItem: vscode.TreeItem) => {
