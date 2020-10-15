@@ -59,34 +59,34 @@
 		"menus": {
 			"view/item/context": [
 				{
-					"command": "log-analysis.deleteFilter",
-					"when": "view == filters",
-					"group": "inline"
-				},
-				{
 					"command": "log-analysis.editFilter",
 					"when": "view == filters",
-					"group": "inline"
-				},
-				{
-					"command": "log-analysis.disableVisibility",
-					"when": "view == filters && viewItem =~ /-visible/",
-					"group": "inline"
-				},
-				{
-					"command": "log-analysis.enableVisibility",
-					"when": "view == filters && viewItem =~ /-invisible/",
-					"group": "inline"
+					"group": "inline@1"
 				},
 				{
 					"command": "log-analysis.disableHighlight",
 					"when": "view == filters && viewItem =~ /^lit/",
-					"group": "inline"
+					"group": "inline@2"
 				},
 				{
 					"command": "log-analysis.enableHighlight",
 					"when": "view == filters && viewItem =~ /^unlit/",
-					"group": "inline"
+					"group": "inline@3"
+				},
+				{
+					"command": "log-analysis.disableVisibility",
+					"when": "view == filters && viewItem =~ /-visible/",
+					"group": "inline@4"
+				},
+				{
+					"command": "log-analysis.enableVisibility",
+					"when": "view == filters && viewItem =~ /-invisible/",
+					"group": "inline@5"
+				},
+				{
+					"command": "log-analysis.deleteFilter",
+					"when": "view == filters",
+					"group": "inline@6"
 				}
 			],
 			"view/title": [

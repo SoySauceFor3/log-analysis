@@ -80,7 +80,6 @@ export function activate(context: vscode.ExtensionContext) {
                 },
                 new FocusFoldingRangeProvider(filterArr)
             );
-            //toggle on focus mode, so fold everything
             vscode.commands.executeCommand("editor.foldAll");
         }
     }
@@ -114,23 +113,51 @@ export function activate(context: vscode.ExtensionContext) {
     );
     context.subscriptions.push(disposableEnableVisibility);
 
+    let focusDecorationType: vscode.TextEditorDecorationType;
+    
     let disposableToggleFocusMode = vscode.commands.registerCommand(
         "log-analysis.toggleFocusMode",
         () => {
             if (inFocusMode) {
-                //toggle off focus mode, so unfold everything
-                vscode.commands.executeCommand("editor.unfoldAll");
-                disposableFoldingRange.dispose();
+                let editor = vscode.window.activeTextEditor!;
+                editor.edit((editBuilder) => {
+                    editBuilder.delete(new vscode.Range(
+                        new vscode.Position(0, 0),
+                        new vscode.Position(1, 0)));
+                }).then(() => {
+                    //toggle off focus mode, so unfold everything and remove decorations
+                    focusDecorationType.dispose();
+                    vscode.commands.executeCommand("editor.unfoldAll");
+                    disposableFoldingRange.dispose();
+                }); 
             } else {
-                disposableFoldingRange = vscode.languages.registerFoldingRangeProvider(
-                    {
-                        pattern: "*",
-                    },
-                    new FocusFoldingRangeProvider(filterArr)
-                );
-                //toggle on focus mode, so fold everything
-                vscode.commands.executeCommand("editor.foldAll");
-                
+                let editor = vscode.window.activeTextEditor!;
+                editor.edit((editBuilder) => {
+                    editBuilder.insert(new vscode.Position(0, 0), "\n");
+                }).then(() => {
+                    focusDecorationType = vscode.window.createTextEditorDecorationType(
+                        {
+                            before: {
+                                contentText: ">>>>>>>focus mode<<<<<<<",
+                                color: "#888888",
+                            }
+                        }
+                    );
+                    let focusDecorationRangeArray = [new vscode.Range(
+                        new vscode.Position(0, 0),
+                        new vscode.Position(1, 0)
+                    )];
+                    editor.setDecorations(focusDecorationType, focusDecorationRangeArray);
+                    
+                    disposableFoldingRange = vscode.languages.registerFoldingRangeProvider(
+                        {
+                            pattern: "*",
+                        },
+                        new FocusFoldingRangeProvider(filterArr)
+                    );
+                    //toggle on focus mode, so fold everything
+                    vscode.commands.executeCommand("editor.foldAll");
+                });  
             }
             inFocusMode = !inFocusMode;
         }
