@@ -1,6 +1,4 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
 import { Filter } from "./utils";
 
 export class FilterTreeViewProvider implements vscode.TreeDataProvider<FilterItem> {
@@ -28,7 +26,6 @@ export class FilterTreeViewProvider implements vscode.TreeDataProvider<FilterIte
 }
 
 export class FilterItem extends vscode.TreeItem {
-    // waitForFile: boolean;
 
     constructor(
         filter: Filter,

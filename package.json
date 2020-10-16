@@ -56,12 +56,12 @@
 				"icon": "$(plus)"
 			},
 			{
-				"command": "log-analysis.export",
-				"title": "Export"
+				"command": "log-analysis.exportFilters",
+				"title": "Export Filters"
 			},
 			{
-				"command": "log-analysis.import",
-				"title": "Import"
+				"command": "log-analysis.importFilters",
+				"title": "Import Filters"
 			}
 		],
 		"menus": {
@@ -109,11 +109,11 @@
 					"group": "navigation"
 				},
 				{
-					"command": "log-analysis.import",
+					"command": "log-analysis.importFilters",
 					"when": "view == filters"
 				},
 				{
-					"command": "log-analysis.export",
+					"command": "log-analysis.exportFilters",
 					"when": "view == filters"
 				}
 			]
