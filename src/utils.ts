@@ -26,3 +26,10 @@ export function filterLines(sourceCodeArr: string[], filter: Filter): number[] {
 export function generateRandomColor(): string {
     return `hsl(${Math.floor(360 * Math.random())}, 40%, 40%)`;
 }
+
+export function cleanUpIconFiles(storageUri: vscode.Uri) {
+    vscode.workspace.fs.delete(storageUri, {
+        recursive: true,
+        useTrash: false
+    });
+}

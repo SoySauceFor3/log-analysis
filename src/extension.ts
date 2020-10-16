@@ -3,7 +3,7 @@
 import * as vscode from "vscode";
 import * as csvParse from "csv-parse/lib/sync";
 import * as path from 'path';
-import { Filter, filterLines, generateRandomColor } from "./utils";
+import { Filter, filterLines, generateRandomColor, cleanUpIconFiles } from "./utils";
 import { FocusFoldingRangeProvider } from "./foldingRangeProvider";
 import { FilterTreeViewProvider } from "./filterTreeViewProvider";
 
@@ -23,15 +23,10 @@ async function init(uri: vscode.Uri): Promise<Filter[]> {
         };
     });
 }
-
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
+let storageUri: vscode.Uri;
 export function activate(context: vscode.ExtensionContext) {
-    // //read the config file
-    // let uri = vscode.Uri.file(
-    //     "/Users/xinya/Documents/GitHub/log-analysis/src/example.csv"
-    // );
-
+    storageUri = context.globalStorageUri; 
+    cleanUpIconFiles(storageUri);
     let inFocusMode = false;
     let filterArr: Filter[] = [];
     const filterTreeViewProvider = new FilterTreeViewProvider(filterArr);
@@ -40,7 +35,10 @@ export function activate(context: vscode.ExtensionContext) {
     // applyHighlight
     let decorations: vscode.TextEditorDecorationType[] = [];
     function applyHighlight() {
-        let editor = vscode.window.activeTextEditor!;
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            return;
+        }
         let sourceCode = editor.document.getText();
         const sourceCodeArr = sourceCode.split("\n");
 
@@ -188,8 +186,11 @@ export function activate(context: vscode.ExtensionContext) {
     let disposableToggleFocusMode = vscode.commands.registerCommand(
         "log-analysis.toggleFocusMode",
         () => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+                return;
+            }
             if (inFocusMode) {
-                let editor = vscode.window.activeTextEditor!;
                 editor.edit((editBuilder) => {
                     editBuilder.delete(new vscode.Range(
                         new vscode.Position(0, 0),
@@ -201,7 +202,6 @@ export function activate(context: vscode.ExtensionContext) {
                     disposableFoldingRange.dispose();
                 }); 
             } else {
-                let editor = vscode.window.activeTextEditor!;
                 editor.edit((editBuilder) => {
                     editBuilder.insert(new vscode.Position(0, 0), "\n");
                 }).then(() => {
@@ -262,7 +262,7 @@ export function activate(context: vscode.ExtensionContext) {
                     isShown: true, 
                     regex: new RegExp(regexStr),
                     color: generateRandomColor(),
-                    id: `${Math.random()}`,
+                    id,
                     iconPath: generateSvgUri(id, true)
                 };
                 filterArr.push(filter);
@@ -323,12 +323,14 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(disposibleDisableHighlight);
 }
 
+
 // this method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() {
+    cleanUpIconFiles(storageUri);
+}
 
 function generateSvgUri(id: string, isHighlighted: boolean): vscode.Uri {
-    const path = `/Users/xinya/Documents/GitHub/log-analysis/resources/${id}${isHighlighted}.svg`;
-    return vscode.Uri.file(path);
+    return vscode.Uri.joinPath(storageUri, `./${id}${isHighlighted}.svg`);
 }
 
 function writeSvgContent(filter: Filter, provider: FilterTreeViewProvider): void {
