@@ -9,6 +9,7 @@ export type Filter = {
     color: string;
     id: string;
     iconPath: vscode.Uri;
+    count: number;
 };
 
 // returns an array of line numbers that match the filter

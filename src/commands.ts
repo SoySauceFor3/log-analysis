@@ -3,39 +3,41 @@ import { State } from "./extension";
 import { FocusFoldingRangeProvider } from "./foldingRangeProvider";
 import { Filter, generateSvgUri, writeSvgContent, generateRandomColor, filterLines } from "./utils";
 
-function applyHighlight(state: State):void {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-        return;
-    }
-    let sourceCode = editor.document.getText();
-    const sourceCodeArr = sourceCode.split("\n");
-
-    // remove old decorations
+function applyHighlight(state: State, editors: vscode.TextEditor[]): void {
+    console.log(editors);
+    
+    // remove old decorations from all the text editor using the given decorationType
     state.decorations.forEach(decorationType => decorationType.dispose());
     state.decorations = [];
+    
+    editors.forEach((editor) => {
+        let sourceCode = editor.document.getText();
+        const sourceCodeArr = sourceCode.split("\n");
 
-    //apply new decorations
-    state.filterArr.forEach((filter) => {
-        if (!filter.isHighlighted) {
-            return;
-        }
-        const lineNumbers = filterLines(sourceCodeArr, filter);
-        const decorationsArray = lineNumbers.map((lineIdx) => {
-            return new vscode.Range(
-                new vscode.Position(lineIdx, 0),
-                new vscode.Position(lineIdx, 20)
-            );
-        });
-        let decorationType = vscode.window.createTextEditorDecorationType(
-            {
-                backgroundColor: filter.color,
-                isWholeLine: true,
+        //apply new decorations
+        state.filterArr.forEach((filter) => {
+            if (!filter.isHighlighted) {
+                return;
             }
-        );
-        state.decorations.push(decorationType);
-        editor.setDecorations(decorationType, decorationsArray);
+            const lineNumbers = filterLines(sourceCodeArr, filter);
+            filter.count = lineNumbers.length;
+            const decorationsArray = lineNumbers.map((lineIdx) => {
+                return new vscode.Range(
+                    new vscode.Position(lineIdx, 0),
+                    new vscode.Position(lineIdx, 20)
+                );
+            });
+            let decorationType = vscode.window.createTextEditorDecorationType(
+                {
+                    backgroundColor: filter.color,
+                    isWholeLine: true,
+                }
+            );
+            state.decorations.push(decorationType);
+            editor.setDecorations(decorationType, decorationsArray);
+        });
     });
+    
 }
 
 function refreshFolding(state: State):void {
@@ -103,13 +105,14 @@ export function importFilters(state: State) {
                         isHighlighted: filterText.isHighlighted as boolean,
                         isShown: filterText.isShown as boolean,
                         id,
-                        iconPath: generateSvgUri(state.storageUri, id, filterText.isHighlighted)
+                        iconPath: generateSvgUri(state.storageUri, id, filterText.isHighlighted),
+                        count: 0
                     };
                     state.filterArr.push(filter);
                     writeSvgContent(filter, state.filterTreeViewProvider);
                 }
             });
-            applyHighlight(state);
+            applyHighlight(state, vscode.window.visibleTextEditors);
             refreshFolding(state);
         });
 }
@@ -123,7 +126,7 @@ export function setVisibility(isShown: boolean, filterTreeItem: vscode.TreeItem,
 }
 
 let focusDecorationType: vscode.TextEditorDecorationType;
-    
+
 export function toggleFocusMode(state: State) {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
@@ -166,7 +169,7 @@ export function toggleFocusMode(state: State) {
             );
             //toggle on focus mode, so fold everything
             vscode.commands.executeCommand("editor.foldAll");
-        });  
+        });   
     }
     state.inFocusMode = !state.inFocusMode;
 }
@@ -175,7 +178,7 @@ export function deleteFilter(filterTreeItem: vscode.TreeItem, state: State) {
     const deleteIndex = state.filterArr.findIndex(filter => (filter.id === filterTreeItem.id));
     state.filterArr.splice(deleteIndex, 1);
     state.filterTreeViewProvider.refresh();
-    applyHighlight(state);
+    applyHighlight(state, vscode.window.visibleTextEditors);
 }
 
 export function addFilter(state: State) {
@@ -193,11 +196,12 @@ export function addFilter(state: State) {
             regex: new RegExp(regexStr),
             color: generateRandomColor(),
             id,
-            iconPath: generateSvgUri(state.storageUri, id, true)
+            iconPath: generateSvgUri(state.storageUri, id, true),
+            count: 0
         };
         state.filterArr.push(filter);
         writeSvgContent(filter, state.filterTreeViewProvider);
-        applyHighlight(state);
+        applyHighlight(state, vscode.window.visibleTextEditors);
         refreshFolding(state);
     });
 }
@@ -214,7 +218,7 @@ export function editFilter(filterTreeItem: vscode.TreeItem, state: State) {
         const filter = state.filterArr.find(filter => (filter.id === id));
         filter!.regex = new RegExp(regexStr);
         state.filterTreeViewProvider.refresh();
-        applyHighlight(state);
+        applyHighlight(state, vscode.window.visibleTextEditors);
         refreshFolding(state);
     });
 }
@@ -224,7 +228,12 @@ export function setHighlight(isHighlighted: boolean, filterTreeItem: vscode.Tree
     const filter = state.filterArr.find(filter => (filter.id === id));
     filter!.isHighlighted = isHighlighted;
     filter!.iconPath = generateSvgUri(state.storageUri, filter!.id, filter!.isHighlighted);
+    applyHighlight(state, vscode.window.visibleTextEditors);
     writeSvgContent(filter!, state.filterTreeViewProvider);
-    applyHighlight(state);
+    refreshFolding(state);
+}
+
+export function refreshEditors(state: State) {
+    applyHighlight(state, vscode.window.visibleTextEditors);
     refreshFolding(state);
 }

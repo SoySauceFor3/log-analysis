@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { Filter, cleanUpIconFiles } from "./utils";
 import { FilterTreeViewProvider } from "./filterTreeViewProvider";
-import { deleteFilter, setVisibility, importFilters, toggleFocusMode, exportFilters, addFilter, editFilter, setHighlight } from "./commands";
+import { deleteFilter, setVisibility, importFilters, toggleFocusMode, exportFilters, addFilter, editFilter, setHighlight, refreshEditors } from "./commands";
 //GLOBAL
 let storageUri: vscode.Uri;
 
@@ -18,6 +18,7 @@ export function activate(context: vscode.ExtensionContext) {
     storageUri = context.globalStorageUri; //get the store path
     cleanUpIconFiles(storageUri); //clean up the old icon files
 
+        
     //internal globals
     const filterArr: Filter[] = []; 
     const state: State = {
@@ -31,8 +32,11 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.window.registerTreeDataProvider('filters', state.filterTreeViewProvider);
 
-    //helper functions
-
+    //
+    var disposableEventListener = vscode.window.onDidChangeVisibleTextEditors(event => {
+        refreshEditors(state);
+    });
+    context.subscriptions.push(disposableEventListener);
 
     //register commands
     let disposableExport = vscode.commands.registerCommand(

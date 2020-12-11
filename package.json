@@ -2,6 +2,11 @@
 	"name": "log-analysis",
 	"displayName": "Log Analysis",
 	"description": "Add highlights and filters to help log analysis",
+	"publisher": "XinyaYang0506",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/XinyaYang0506/log-analysis.git"
+	},
 	"version": "1.0.0",
 	"engines": {
 		"vscode": "^1.49.0"

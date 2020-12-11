@@ -34,15 +34,17 @@ export class FilterItem extends vscode.TreeItem {
         this.label = filter.regex.toString();
         this.id = filter.id;
         this.iconPath = filter.iconPath;
-
+        
 
         if (filter.isHighlighted) {
+            this.description = ` · ${filter.count}`;
             if (filter.isShown) {
                 this.contextValue = 'lit-visible';
             } else {
                 this.contextValue = 'lit-invisible';
             }
         } else {
+            this.description = '';
             if (filter.isShown) {
                 this.contextValue = 'unlit-visible';
             } else {
