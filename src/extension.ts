@@ -1,9 +1,9 @@
 import * as vscode from "vscode";
 import { Filter, cleanUpIconFiles } from "./utils";
 import { FilterTreeViewProvider } from "./filterTreeViewProvider";
-import { applyHighlight, deleteFilter, setVisibility, importFilters, onFocusMode, exportFilters, addFilter, editFilter, setHighlight, refreshEditors } from "./commands";
+import { applyHighlight, deleteFilter, setVisibility, importFilters, turnOnFocusMode, exportFilters, addFilter, editFilter, setHighlight, refreshEditors } from "./commands";
 import { FocusProvider } from "./focusProvider";
-//GLOBAL
+//GLOBAL to be used for activate and deactivate
 let storageUri: vscode.Uri;
 
 export type State = {
@@ -32,26 +32,30 @@ export function activate(context: vscode.ExtensionContext) {
         focusProvider: new FocusProvider(filterArr),
         storageUri
     };
-    
+    //tell vs code to open focus:... uris with state.focusProvider
     vscode.workspace.registerTextDocumentContentProvider('focus', state.focusProvider);
-
+    //register filterTreeViewProvider under id 'filters' which gets attached
+    //to the file explorer according to package.json's contributes>views>explorer
     vscode.window.registerTreeDataProvider('filters', state.filterTreeViewProvider);
-
-    //
-    var disposableEventListener = vscode.window.onDidChangeVisibleTextEditors(event => {
-        refreshEditors(state);
-
-    });
-    context.subscriptions.push(disposableEventListener);
-
-    vscode.workspace.onDidChangeTextDocument(event => {
+    
+    //Add events listener
+    var disposableOnDidChangeVisibleTextEditors = vscode.window.onDidChangeVisibleTextEditors(event => {
         refreshEditors(state);
     });
+    context.subscriptions.push(disposableOnDidChangeVisibleTextEditors);
 
-    vscode.window.onDidChangeActiveTextEditor(event => {
+    var disposableOnDidChangeTextDocument = vscode.workspace.onDidChangeTextDocument(event => {
+        refreshEditors(state);
+    });
+    context.subscriptions.push(disposableOnDidChangeTextDocument);
+
+    var disposableOnDidChangeActiveTextEditor = vscode.window.onDidChangeActiveTextEditor(event => {
+        //update the filter counts for the current activate editor
         applyHighlight(state, vscode.window.visibleTextEditors);
         state.filterTreeViewProvider.refresh();
-    })
+    });
+    context.subscriptions.push(disposableOnDidChangeActiveTextEditor);
+
     //register commands
     let disposableExport = vscode.commands.registerCommand(
         "log-analysis.exportFilters", 
@@ -75,17 +79,11 @@ export function activate(context: vscode.ExtensionContext) {
     );
     context.subscriptions.push(disposableDisableVisibility);
     
-    let disposableOnFocusMode = vscode.commands.registerCommand(
-        "log-analysis.onFocusMode",
-        () => onFocusMode(state)
+    let disposableTurnOnFocusMode = vscode.commands.registerCommand(
+        "log-analysis.turnOnFocusMode",
+        () => turnOnFocusMode(state)
     );
-    context.subscriptions.push(disposableOnFocusMode);
-
-    let disposibleDeleteFilter = vscode.commands.registerCommand(
-        "log-analysis.deleteFilter",
-        (filterTreeItem: vscode.TreeItem) => deleteFilter(filterTreeItem, state)
-    );
-    context.subscriptions.push(disposibleDeleteFilter);
+    context.subscriptions.push(disposableTurnOnFocusMode);
 
     let disposibleAddFilter = vscode.commands.registerCommand(
         "log-analysis.addFilter",
@@ -98,6 +96,12 @@ export function activate(context: vscode.ExtensionContext) {
         (filterTreeItem: vscode.TreeItem) => editFilter(filterTreeItem, state)
     );
     context.subscriptions.push(disposibleEditFilter);
+
+    let disposibleDeleteFilter = vscode.commands.registerCommand(
+        "log-analysis.deleteFilter",
+        (filterTreeItem: vscode.TreeItem) => deleteFilter(filterTreeItem, state)
+    );
+    context.subscriptions.push(disposibleDeleteFilter);
 
     let disposibleEnableHighlight = vscode.commands.registerCommand(
         "log-analysis.enableHighlight",

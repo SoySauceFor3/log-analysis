@@ -2,3 +2,4 @@
 - [X] connect to a keybinding
 - [X] update focus mode when adding/removing filters or changing filter visibility
 - [X] Add support for editing
+- [ ] file specific filters

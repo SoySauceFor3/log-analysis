@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { Filter } from "./utils";
 
+//provides filters as tree items to be displayed on the sidebar
 export class FilterTreeViewProvider implements vscode.TreeDataProvider<FilterItem> {
 
     constructor(private filterArr:Filter[]) {}
@@ -9,6 +10,8 @@ export class FilterTreeViewProvider implements vscode.TreeDataProvider<FilterIte
         return element;
     }
 
+    //getChildren(filterItem) returns empty list because filters have no children.
+    //getChildren() returns the root elements (all the filters)
     getChildren(element?: FilterItem): FilterItem[] {
         if (element) {
             return [];
@@ -21,10 +24,12 @@ export class FilterTreeViewProvider implements vscode.TreeDataProvider<FilterIte
     readonly onDidChangeTreeData: vscode.Event<FilterItem | undefined> = this._onDidChangeTreeData.event;
     
     refresh(): void {
+        console.log("in refresh");
         this._onDidChangeTreeData.fire(undefined);
     }
 }
 
+//represents a filter as one row in the sidebar
 export class FilterItem extends vscode.TreeItem {
 
     constructor(
@@ -53,5 +58,6 @@ export class FilterItem extends vscode.TreeItem {
         }
     }
 
+    //contextValue connects to package.json>menus>view/item/context
     contextValue: 'lit-visible' | 'unlit-visible' | 'lit-invisible' | 'unlit-invisible';
 }

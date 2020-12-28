@@ -41,7 +41,7 @@
 				"icon": "$(eye-closed)"
 			},
 			{
-				"command": "log-analysis.onFocusMode",
+				"command": "log-analysis.turnOnFocusMode",
 				"title": "Turn on Focus Mode",
 				"icon": "$(symbol-keyword)"
 			},
@@ -109,7 +109,7 @@
 					"group": "navigation"
 				},
 				{
-					"command": "log-analysis.onFocusMode",
+					"command": "log-analysis.turnOnFocusMode",
 					"when": "view == filters",
 					"group": "navigation"
 				},
@@ -125,7 +125,7 @@
 
 		},
 		"keybindings": [{
-			"command": "log-analysis.onFocusMode",
+			"command": "log-analysis.turnOnFocusMode",
 			"key": "ctrl+h",
 			"mac": "cmd+h"
 		}],
