@@ -22,7 +22,7 @@ export class FilterTreeViewProvider implements vscode.TreeDataProvider<FilterIte
     
     refresh(): void {
         this._onDidChangeTreeData.fire(undefined);
-      }
+    }
 }
 
 export class FilterItem extends vscode.TreeItem {

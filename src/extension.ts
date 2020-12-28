@@ -1,7 +1,8 @@
 import * as vscode from "vscode";
 import { Filter, cleanUpIconFiles } from "./utils";
 import { FilterTreeViewProvider } from "./filterTreeViewProvider";
-import { deleteFilter, setVisibility, importFilters, toggleFocusMode, exportFilters, addFilter, editFilter, setHighlight, refreshEditors } from "./commands";
+import { deleteFilter, setVisibility, importFilters, onFocusMode, exportFilters, addFilter, editFilter, setHighlight, refreshEditors } from "./commands";
+import { FocusProvider } from "./focusProvider";
 //GLOBAL
 let storageUri: vscode.Uri;
 
@@ -11,6 +12,7 @@ export type State = {
     decorations: vscode.TextEditorDecorationType[];
     disposableFoldingRange: vscode.Disposable | null;
     filterTreeViewProvider: FilterTreeViewProvider;
+    focusProvider:FocusProvider
     storageUri: vscode.Uri;
 };
 
@@ -27,8 +29,11 @@ export function activate(context: vscode.ExtensionContext) {
         decorations: [],
         disposableFoldingRange: null, 
         filterTreeViewProvider: new FilterTreeViewProvider(filterArr),
+        focusProvider: new FocusProvider(filterArr),
         storageUri
     };
+    
+    vscode.workspace.registerTextDocumentContentProvider('focus', state.focusProvider);
 
     vscode.window.registerTreeDataProvider('filters', state.filterTreeViewProvider);
 
@@ -60,14 +65,12 @@ export function activate(context: vscode.ExtensionContext) {
         (filterTreeItem: vscode.TreeItem) => setVisibility(false, filterTreeItem, state)
     );
     context.subscriptions.push(disposableDisableVisibility);
-
-    let focusDecorationType: vscode.TextEditorDecorationType;
     
-    let disposableToggleFocusMode = vscode.commands.registerCommand(
-        "log-analysis.toggleFocusMode",
-        () => toggleFocusMode(state)
+    let disposableOnFocusMode = vscode.commands.registerCommand(
+        "log-analysis.onFocusMode",
+        () => onFocusMode(state)
     );
-    context.subscriptions.push(disposableToggleFocusMode);
+    context.subscriptions.push(disposableOnFocusMode);
 
     let disposibleDeleteFilter = vscode.commands.registerCommand(
         "log-analysis.deleteFilter",

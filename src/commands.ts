@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { State } from "./extension";
 import { FocusFoldingRangeProvider } from "./foldingRangeProvider";
-import { Filter, generateSvgUri, writeSvgContent, generateRandomColor, filterLines } from "./utils";
+import { generateSvgUri, writeSvgContent, generateRandomColor, filterLines } from "./utils";
 
 function applyHighlight(state: State, editors: vscode.TextEditor[]): void {
     console.log(editors);
@@ -127,26 +127,19 @@ export function setVisibility(isShown: boolean, filterTreeItem: vscode.TreeItem,
 
 let focusDecorationType: vscode.TextEditorDecorationType;
 
-export function toggleFocusMode(state: State) {
-    const editor = vscode.window.activeTextEditor;
+export function onFocusMode(state: State) {
+    let editor = vscode.window.activeTextEditor;
     if (!editor) {
         return;
     }
-    if (state.inFocusMode) {
-        editor.edit((editBuilder) => {
-            editBuilder.delete(new vscode.Range(
-                new vscode.Position(0, 0),
-                new vscode.Position(1, 0)));
-        }).then(() => {
-            //toggle off focus mode, so unfold everything and remove decorations
-            focusDecorationType.dispose();
-            vscode.commands.executeCommand("editor.unfoldAll");
-            state.disposableFoldingRange?.dispose();
-        }); 
+
+    let escapedUri = editor.document.uri.toString();
+    if (escapedUri.startsWith('focus:')) {
+        vscode.window.showInformationMessage('You are on focus mode virtual document already!');
+        return;
     } else {
-        editor.edit((editBuilder) => {
-            editBuilder.insert(new vscode.Position(0, 0), "\n");
-        }).then(() => {
+        let virtualUri = vscode.Uri.parse('focus:' + escapedUri);
+        vscode.workspace.openTextDocument(virtualUri).then(doc => vscode.window.showTextDocument(doc)).then(editor => {
             focusDecorationType = vscode.window.createTextEditorDecorationType(
                 {
                     before: {
@@ -160,18 +153,9 @@ export function toggleFocusMode(state: State) {
                 new vscode.Position(1, 0)
             )];
             editor.setDecorations(focusDecorationType, focusDecorationRangeArray);
-            
-            state.disposableFoldingRange = vscode.languages.registerFoldingRangeProvider(
-                {
-                    pattern: "*",
-                },
-                new FocusFoldingRangeProvider(state.filterArr)
-            );
-            //toggle on focus mode, so fold everything
-            vscode.commands.executeCommand("editor.foldAll");
-        });   
+        });
     }
-    state.inFocusMode = !state.inFocusMode;
+    
 }
 
 export function deleteFilter(filterTreeItem: vscode.TreeItem, state: State) {
@@ -201,8 +185,12 @@ export function addFilter(state: State) {
         };
         state.filterArr.push(filter);
         writeSvgContent(filter, state.filterTreeViewProvider);
+        vscode.window.visibleTextEditors.forEach(editor => {
+            state.focusProvider.refresh(editor.document.uri);
+        });
         applyHighlight(state, vscode.window.visibleTextEditors);
         refreshFolding(state);
+
     });
 }
 
