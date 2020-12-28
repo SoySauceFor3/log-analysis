@@ -36,11 +36,11 @@ export function cleanUpIconFiles(storageUri: vscode.Uri) {
     });
 }
 
-export function writeSvgContent(filter: Filter, provider: FilterTreeViewProvider): void {
+export function writeSvgContent(filter: Filter, treeViewProvider: FilterTreeViewProvider): void {
     const fullSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle fill="${filter.color}" cx="50" cy="50" r="50"/></svg>`;
     const emptySvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle stroke="${filter.color}" fill="transparent" stroke-width="10" cx="50" cy="50" r="45"/></svg>`;
     vscode.workspace.fs.writeFile(filter.iconPath, str2Uint8(filter.isHighlighted ? fullSvg : emptySvg)).then(() => {
-        provider.refresh();
+        treeViewProvider.refresh();
     });
 }
 

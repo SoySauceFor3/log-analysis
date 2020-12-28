@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { Filter, cleanUpIconFiles } from "./utils";
 import { FilterTreeViewProvider } from "./filterTreeViewProvider";
-import { deleteFilter, setVisibility, importFilters, onFocusMode, exportFilters, addFilter, editFilter, setHighlight, refreshEditors } from "./commands";
+import { applyHighlight, deleteFilter, setVisibility, importFilters, onFocusMode, exportFilters, addFilter, editFilter, setHighlight, refreshEditors } from "./commands";
 import { FocusProvider } from "./focusProvider";
 //GLOBAL
 let storageUri: vscode.Uri;
@@ -40,9 +40,18 @@ export function activate(context: vscode.ExtensionContext) {
     //
     var disposableEventListener = vscode.window.onDidChangeVisibleTextEditors(event => {
         refreshEditors(state);
+
     });
     context.subscriptions.push(disposableEventListener);
 
+    vscode.workspace.onDidChangeTextDocument(event => {
+        refreshEditors(state);
+    });
+
+    vscode.window.onDidChangeActiveTextEditor(event => {
+        applyHighlight(state, vscode.window.visibleTextEditors);
+        state.filterTreeViewProvider.refresh();
+    })
     //register commands
     let disposableExport = vscode.commands.registerCommand(
         "log-analysis.exportFilters", 

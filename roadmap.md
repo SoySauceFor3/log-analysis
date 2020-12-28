@@ -1,0 +1,4 @@
+- [ ] jump from a line in focus mode to the same line in original document and vice versa
+- [X] connect to a keybinding
+- [X] update focus mode when adding/removing filters or changing filter visibility
+- [X] Add support for editing

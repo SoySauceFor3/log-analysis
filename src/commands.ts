@@ -1,9 +1,8 @@
 import * as vscode from "vscode";
 import { State } from "./extension";
-import { FocusFoldingRangeProvider } from "./foldingRangeProvider";
 import { generateSvgUri, writeSvgContent, generateRandomColor, filterLines } from "./utils";
 
-function applyHighlight(state: State, editors: vscode.TextEditor[]): void {
+export function applyHighlight(state: State, editors: vscode.TextEditor[]): void {
     console.log(editors);
     
     // remove old decorations from all the text editor using the given decorationType
@@ -13,14 +12,21 @@ function applyHighlight(state: State, editors: vscode.TextEditor[]): void {
     editors.forEach((editor) => {
         let sourceCode = editor.document.getText();
         const sourceCodeArr = sourceCode.split("\n");
-
+        
         //apply new decorations
         state.filterArr.forEach((filter) => {
-            if (!filter.isHighlighted) {
+            if (!filter.isHighlighted || (editor.document.uri.toString().startsWith('focus:') && !filter.isShown)) {
+                if (editor === vscode.window.activeTextEditor) {
+                    filter.count = 0;
+                    console.log(filter.count);
+                }
                 return;
             }
             const lineNumbers = filterLines(sourceCodeArr, filter);
-            filter.count = lineNumbers.length;
+            if (editor === vscode.window.activeTextEditor) {
+                filter.count = lineNumbers.length;
+                console.log(filter.count);
+            }
             const decorationsArray = lineNumbers.map((lineIdx) => {
                 return new vscode.Range(
                     new vscode.Position(lineIdx, 0),
@@ -38,20 +44,6 @@ function applyHighlight(state: State, editors: vscode.TextEditor[]): void {
         });
     });
     
-}
-
-function refreshFolding(state: State):void {
-  if (state.inFocusMode) {
-      vscode.commands.executeCommand("editor.unfoldAll");
-      state.disposableFoldingRange?.dispose();
-      state.disposableFoldingRange = vscode.languages.registerFoldingRangeProvider(
-          {
-              pattern: "*",
-          },
-          new FocusFoldingRangeProvider(state.filterArr)
-      );
-      vscode.commands.executeCommand("editor.foldAll");
-  }
 }
 
 export function exportFilters(state: State) {
@@ -113,7 +105,6 @@ export function importFilters(state: State) {
                 }
             });
             applyHighlight(state, vscode.window.visibleTextEditors);
-            refreshFolding(state);
         });
 }
 
@@ -121,8 +112,7 @@ export function setVisibility(isShown: boolean, filterTreeItem: vscode.TreeItem,
     const id = filterTreeItem.id;
     const filter = state.filterArr.find(filter => (filter.id === id));
     filter!.isShown = isShown;
-    state.filterTreeViewProvider.refresh();
-    refreshFolding(state);
+    refreshEditors(state);
 }
 
 let focusDecorationType: vscode.TextEditorDecorationType;
@@ -139,21 +129,7 @@ export function onFocusMode(state: State) {
         return;
     } else {
         let virtualUri = vscode.Uri.parse('focus:' + escapedUri);
-        vscode.workspace.openTextDocument(virtualUri).then(doc => vscode.window.showTextDocument(doc)).then(editor => {
-            focusDecorationType = vscode.window.createTextEditorDecorationType(
-                {
-                    before: {
-                        contentText: ">>>>>>>focus mode<<<<<<<",
-                        color: "#888888",
-                    }
-                }
-            );
-            let focusDecorationRangeArray = [new vscode.Range(
-                new vscode.Position(0, 0),
-                new vscode.Position(1, 0)
-            )];
-            editor.setDecorations(focusDecorationType, focusDecorationRangeArray);
-        });
+        vscode.workspace.openTextDocument(virtualUri).then(doc => vscode.window.showTextDocument(doc));
     }
     
 }
@@ -161,8 +137,7 @@ export function onFocusMode(state: State) {
 export function deleteFilter(filterTreeItem: vscode.TreeItem, state: State) {
     const deleteIndex = state.filterArr.findIndex(filter => (filter.id === filterTreeItem.id));
     state.filterArr.splice(deleteIndex, 1);
-    state.filterTreeViewProvider.refresh();
-    applyHighlight(state, vscode.window.visibleTextEditors);
+    refreshEditors(state);
 }
 
 export function addFilter(state: State) {
@@ -185,12 +160,7 @@ export function addFilter(state: State) {
         };
         state.filterArr.push(filter);
         writeSvgContent(filter, state.filterTreeViewProvider);
-        vscode.window.visibleTextEditors.forEach(editor => {
-            state.focusProvider.refresh(editor.document.uri);
-        });
-        applyHighlight(state, vscode.window.visibleTextEditors);
-        refreshFolding(state);
-
+        refreshEditors(state);
     });
 }
 
@@ -205,9 +175,7 @@ export function editFilter(filterTreeItem: vscode.TreeItem, state: State) {
         const id = filterTreeItem.id;
         const filter = state.filterArr.find(filter => (filter.id === id));
         filter!.regex = new RegExp(regexStr);
-        state.filterTreeViewProvider.refresh();
-        applyHighlight(state, vscode.window.visibleTextEditors);
-        refreshFolding(state);
+        refreshEditors(state);
     });
 }
 
@@ -218,10 +186,30 @@ export function setHighlight(isHighlighted: boolean, filterTreeItem: vscode.Tree
     filter!.iconPath = generateSvgUri(state.storageUri, filter!.id, filter!.isHighlighted);
     applyHighlight(state, vscode.window.visibleTextEditors);
     writeSvgContent(filter!, state.filterTreeViewProvider);
-    refreshFolding(state);
 }
 
 export function refreshEditors(state: State) {
+    vscode.window.visibleTextEditors.forEach(editor => {
+        state.focusProvider.refresh(editor.document.uri);
+    });
+    vscode.window.visibleTextEditors.forEach(editor => {
+        let escapedUri = editor.document.uri.toString();
+        if (escapedUri.startsWith('focus:')){
+            focusDecorationType = vscode.window.createTextEditorDecorationType(
+                {
+                    before: {
+                        contentText: ">>>>>>>focus mode<<<<<<<",
+                        color: "#888888",
+                    }
+                }
+            );
+            let focusDecorationRangeArray = [new vscode.Range(
+                new vscode.Position(0, 0),
+                new vscode.Position(1, 0)
+            )];
+            editor.setDecorations(focusDecorationType, focusDecorationRangeArray);
+        }
+    });
     applyHighlight(state, vscode.window.visibleTextEditors);
-    refreshFolding(state);
+    state.filterTreeViewProvider.refresh();
 }

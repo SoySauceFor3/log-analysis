@@ -41,11 +41,6 @@
 				"icon": "$(eye-closed)"
 			},
 			{
-				"command": "log-analysis.toggleFocusMode",
-				"title": "Toggle Focus Mode",
-				"icon": "$(symbol-keyword)"
-			},
-			{
 				"command": "log-analysis.onFocusMode",
 				"title": "Turn on Focus Mode",
 				"icon": "$(symbol-keyword)"
@@ -129,14 +124,19 @@
 			]
 
 		},
+		"keybindings": [{
+			"command": "log-analysis.onFocusMode",
+			"key": "ctrl+h",
+			"mac": "cmd+h"
+		}],
 		"views": {
-      		"explorer": [
-        		{
-          			"id": "filters",
-          			"name": "Filters"
-        		}
-      		]
-    	}
+			"explorer": [
+				{
+					"id": "filters",
+					"name": "Filters"
+				}
+			]
+    }
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
