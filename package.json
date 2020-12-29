@@ -7,7 +7,7 @@
 		"type": "git",
 		"url": "https://github.com/XinyaYang0506/log-analysis.git"
 	},
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"engines": {
 		"vscode": "^1.49.0"
 	},
