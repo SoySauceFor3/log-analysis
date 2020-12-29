@@ -52,7 +52,7 @@
 			},
 			{
 				"command": "log-analysis.editFilter",
-				"title": "Edit This Filter", 
+				"title": "Edit Regex for This Filter", 
 				"icon": "$(edit)"
 			},
 			{

@@ -42,10 +42,11 @@ export class FilterItem extends vscode.TreeItem {
         
 
         if (filter.isHighlighted) {
-            this.description = ` · ${filter.count}`;
             if (filter.isShown) {
+                this.description = ` · ${filter.count}`;
                 this.contextValue = 'lit-visible';
             } else {
+                this.description = '';
                 this.contextValue = 'lit-invisible';
             }
         } else {
