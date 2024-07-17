@@ -3,3 +3,7 @@
 - [X] update focus mode when adding/removing filters or changing filter visibility
 - [X] Add support for editing
 - [ ] file specific filters
+- [ ] support for analysis of huge files (>50MB)
+- [ ] support for control filters by group
+- [ ] support for filter group management
+- [ ] support for exclude filters
