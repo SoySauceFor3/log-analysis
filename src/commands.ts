@@ -4,7 +4,7 @@ import { generateRandomColor, generateSvgUri, writeSvgContent } from "./utils";
 
 export function applyHighlight(
   state: State,
-  editors: vscode.TextEditor[]
+  editors: readonly vscode.TextEditor[]
 ): void {
   // remove old decorations from all the text editor using the given decorationType
   state.decorations.forEach((decorationType) => decorationType.dispose());
