@@ -4,40 +4,57 @@ import {
   applyHighlight,
   deleteFilter,
   editFilter,
-  exportFilters,
-  importFilters,
   refreshEditors,
   setHighlight,
   setVisibility,
   turnOnFocusMode,
   addGroup,
   editGroup,
-  deleteGroup
+  deleteGroup,
+  saveProject,
+  addProject,
+  editProject,
+  deleteProject,
+  refreshSettings,
+  selectProject,
+  updateExplorerTitle
 } from "./commands";
 import { FilterTreeViewProvider } from "./filterTreeViewProvider";
+import { ProjectTreeViewProvider } from "./projectTreeViewProvider";
 import { FocusProvider } from "./focusProvider";
-import { Group } from "./utils";
+import { Project, Group } from "./utils";
+import { openSettings } from "./settings";
 
 export type State = {
   inFocusMode: boolean;
-  groupArr: Group[];
+  projects: Project[];
+  groups: Group[];
   decorations: vscode.TextEditorDecorationType[];
   disposableFoldingRange: vscode.Disposable | null;
   filterTreeViewProvider: FilterTreeViewProvider;
+  projectTreeViewProvider: ProjectTreeViewProvider;
   focusProvider: FocusProvider;
+  globalStorageUri: vscode.Uri;
 };
 
 export function activate(context: vscode.ExtensionContext) {
   //internal globals
-  const groupArr: Group[] = [];
+  const projects: Project[] = [];
+  const groups: Group[] = [];
   const state: State = {
     inFocusMode: false,
-    groupArr,
+    projects,
+    groups,
     decorations: [],
     disposableFoldingRange: null,
-    filterTreeViewProvider: new FilterTreeViewProvider(groupArr),
-    focusProvider: new FocusProvider(groupArr),
+    filterTreeViewProvider: new FilterTreeViewProvider(groups),
+    projectTreeViewProvider: new ProjectTreeViewProvider(projects),
+    focusProvider: new FocusProvider(groups),
+    globalStorageUri: context.globalStorageUri
   };
+
+  refreshSettings(state);
+
   //tell vs code to open focus:... uris with state.focusProvider
   const disposableFocus = vscode.workspace.registerTextDocumentContentProvider(
     "focus",
@@ -52,6 +69,13 @@ export function activate(context: vscode.ExtensionContext) {
   );
   context.subscriptions.push(view);
 
+  //register projectTreeViewProvider under id 'filters.settings' which gets attached
+  //to filter_project_setting in the Activity Bar according to package.json's contributes>views>filter_project_settings
+  vscode.window.registerTreeDataProvider(
+    "filters.settings",
+    state.projectTreeViewProvider);
+
+  updateExplorerTitle(view, state);
 
   //Add events listener
   var disposableOnDidChangeVisibleTextEditors =
@@ -75,17 +99,68 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(disposableOnDidChangeActiveTextEditor);
 
   //register commands
-  let disposableExport = vscode.commands.registerCommand(
-    "log-analysis.exportFilters",
-    () => exportFilters(state)
-  );
-  context.subscriptions.push(disposableExport);
+  let disposableAddProject = vscode.commands.registerCommand(
+    "log-analysis.addProject",
+    () => addProject(state));
+  context.subscriptions.push(disposableAddProject);
 
-  let disposableImport = vscode.commands.registerCommand(
-    "log-analysis.importFilters",
-    () => importFilters(state)
+  let disposibleEditProject = vscode.commands.registerCommand(
+    "log-analysis.editProject",
+    (treeItem: vscode.TreeItem) => {
+      if (treeItem === undefined) {
+        vscode.window.showErrorMessage('This command is excuted with button in Log Analysis Projects');
+        return;
+      }
+      editProject(treeItem, state, () => {
+        updateExplorerTitle(view, state);
+      });
+    }
   );
-  context.subscriptions.push(disposableImport);
+  context.subscriptions.push(disposibleEditProject);
+
+  let disposableDeleteProject = vscode.commands.registerCommand(
+    "log-analysis.deleteProject",
+    (treeItem: vscode.TreeItem) => {
+      if (treeItem === undefined) {
+        vscode.window.showErrorMessage('This command is excuted with button in Log Analysis Projects');
+        return;
+      }
+      deleteProject(treeItem, state);
+      updateExplorerTitle(view, state);
+    });
+  context.subscriptions.push(disposableDeleteProject);
+
+  let disposableOpenSettings = vscode.commands.registerCommand(
+    "log-analysis.openSettings",
+    () => openSettings(state.globalStorageUri));
+  context.subscriptions.push(disposableOpenSettings);
+
+  let disposableRefreshSettings = vscode.commands.registerCommand(
+    "log-analysis.refreshSettings",
+    () => {
+      refreshSettings(state);
+      updateExplorerTitle(view, state);
+    });
+  context.subscriptions.push(disposableRefreshSettings);
+
+  let disposableSelectProject = vscode.commands.registerCommand(
+    "log-analysis.selectProject",
+    (treeItem: vscode.TreeItem) => {
+      if (treeItem === undefined) {
+        vscode.window.showErrorMessage('This command is excuted with button in Log Analysis+ Projects');
+        return;
+      }
+      if (selectProject(treeItem, state)) {
+        updateExplorerTitle(view, state);
+        vscode.commands.executeCommand('workbench.view.explorer');
+      }
+    });
+  context.subscriptions.push(disposableSelectProject);
+
+  let disposableSaveProject = vscode.commands.registerCommand(
+    "log-analysis.saveProject",
+    () => saveProject(state));
+  context.subscriptions.push(disposableSaveProject);
 
   let disposableEnableVisibility = vscode.commands.registerCommand(
     "log-analysis.enableVisibility",
