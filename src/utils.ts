@@ -12,11 +12,18 @@ export type Filter = {
 };
 
 export type Group = {
-    filterArr: Filter[];
+    filters: Filter[];
     isHighlighted: boolean; // if the matching lines will be highlighted
     isShown: boolean; //if the matching lines will be kept in focus mode
     name: string;
     id: string; //random generated number
+};
+
+export type Project = {
+    groups: Group[];
+    name: string;
+    id: string;
+    selected: boolean;
 };
 
 export function generateRandomColor(): string {

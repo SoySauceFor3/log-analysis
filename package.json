@@ -77,12 +77,33 @@
         "icon": "$(plus)"
       },
       {
-        "command": "log-analysis.exportFilters",
-        "title": "Export Filters"
+        "command": "log-analysis.deleteProject",
+        "title": "Delete This Project",
+        "icon": "$(dialog-close)"
       },
       {
-        "command": "log-analysis.importFilters",
-        "title": "Import Filters"
+        "command": "log-analysis.addProject",
+        "title": "Add Project",
+        "icon": "$(repo-create)"
+      },
+      {
+        "command": "log-analysis.openSettings",
+        "title": "Open Settings",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "log-analysis.refreshSettings",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "log-analysis.saveProject",
+        "title": "Save groups to project",
+        "icon": "$(save-as)"
+      },
+      {
+        "command": "log-analysis.selectProject",
+        "title": "Select project"
       }
     ],
     "menus": {
@@ -131,6 +152,11 @@
           "command": "log-analysis.deleteFilter",
           "when": "view == filters && viewItem =~ /^f-/",
           "group": "inline@5"
+        },
+        {
+          "command": "log-analysis.deleteProject",
+          "when": "view == filters.settings",
+          "group": "inline@5"
         }
       ],
       "view/title": [
@@ -145,12 +171,24 @@
           "group": "navigation@2"
         },
         {
-          "command": "log-analysis.importFilters",
-          "when": "view == filters"
+          "command": "log-analysis.saveProject",
+          "when": "view == filters",
+          "group": "navigation@3"
         },
         {
-          "command": "log-analysis.exportFilters",
-          "when": "view == filters"
+          "command": "log-analysis.addProject",
+          "when": "view == filters.settings",
+          "group": "navigation@1"
+        },
+        {
+          "command": "log-analysis.openSettings",
+          "when": "view == filters.settings",
+          "group": "navigation@2"
+        },
+        {
+          "command": "log-analysis.refreshSettings",
+          "when": "view == filters.settings",
+          "group": "navigation@3"
         }
       ]
     },
@@ -166,6 +204,21 @@
         {
           "id": "filters",
           "name": "Filters"
+        }
+      ],
+      "filter_project_setting": [
+        {
+          "id": "filters.settings",
+          "name": "Projects"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "filter_project_setting",
+          "title": "Log Analysis",
+          "icon": "$(preview)"
         }
       ]
     }
