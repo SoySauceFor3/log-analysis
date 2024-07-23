@@ -1,162 +1,164 @@
 {
-	"name": "log-analysis",
-	"displayName": "Log Analysis",
-	"description": "Add highlights and filters to help log analysis",
-	"publisher": "XinyaYang0506",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/XinyaYang0506/log-analysis.git"
-	},
-	"version": "1.1.0",
-	"engines": {
-		"vscode": "^1.49.0"
-	},
-	"categories": [
-		"Other"
-	],
-	"activationEvents": [
-		"onStartupFinished"
-	],
-	"main": "./out/extension.js",
-	"contributes": {
-		"commands": [
-			{
-				"command": "log-analysis.enableHighlight",
-				"title": "Enable Highlight",
-				"icon": "$(paintcan)"
-			},
-			{
-				"command": "log-analysis.disableHighlight",
-				"title": "Disable Highlight",
-				"icon": "$(paintcan)"
-			},
-			{
-				"command": "log-analysis.enableVisibility",
-				"title": "Enable Visbility",
-				"icon": "$(eye)"
-			},
-			{
-				"command": "log-analysis.disableVisibility",
-				"title": "Disable Visbility",
-				"icon": "$(eye-closed)"
-			},
-			{
-				"command": "log-analysis.turnOnFocusMode",
-				"title": "Turn on Focus Mode",
-				"icon": "$(symbol-keyword)"
-			},
-			{
-				"command": "log-analysis.deleteFilter",
-				"title": "Delete This Filter",
-				"icon": "$(dialog-close)"
-			},
-			{
-				"command": "log-analysis.editFilter",
-				"title": "Edit Regex for This Filter", 
-				"icon": "$(edit)"
-			},
-			{
-				"command": "log-analysis.addFilter",
-				"title": "Add a Filter",
-				"icon": "$(plus)"
-			},
-			{
-				"command": "log-analysis.exportFilters",
-				"title": "Export Filters"
-			},
-			{
-				"command": "log-analysis.importFilters",
-				"title": "Import Filters"
-			}
-		],
-		"menus": {
-			"view/item/context": [
-				{
-					"command": "log-analysis.editFilter",
-					"when": "view == filters",
-					"group": "inline@1"
-				},
-				{
-					"command": "log-analysis.disableHighlight",
-					"when": "view == filters && viewItem =~ /^lit/",
-					"group": "inline@2"
-				},
-				{
-					"command": "log-analysis.enableHighlight",
-					"when": "view == filters && viewItem =~ /^unlit/",
-					"group": "inline@3"
-				},
-				{
-					"command": "log-analysis.disableVisibility",
-					"when": "view == filters && viewItem =~ /-visible/",
-					"group": "inline@4"
-				},
-				{
-					"command": "log-analysis.enableVisibility",
-					"when": "view == filters && viewItem =~ /-invisible/",
-					"group": "inline@5"
-				},
-				{
-					"command": "log-analysis.deleteFilter",
-					"when": "view == filters",
-					"group": "inline@6"
-				}
-			],
-			"view/title": [
-				{
-					"command": "log-analysis.addFilter",
-					"when": "view == filters",
-					"group": "navigation"
-				},
-				{
-					"command": "log-analysis.turnOnFocusMode",
-					"when": "view == filters",
-					"group": "navigation"
-				},
-				{
-					"command": "log-analysis.importFilters",
-					"when": "view == filters"
-				},
-				{
-					"command": "log-analysis.exportFilters",
-					"when": "view == filters"
-				}
-			]
-
-		},
-		"keybindings": [{
-			"command": "log-analysis.turnOnFocusMode",
-			"key": "ctrl+h",
-			"mac": "cmd+h"
-		}],
-		"views": {
-			"explorer": [
-				{
-					"id": "filters",
-					"name": "Filters"
-				}
-			]
+  "name": "log-analysis",
+  "displayName": "Log Analysis",
+  "description": "Add highlights and filters to help log analysis",
+  "publisher": "SoySauceFor3",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SoySauceFor3/log-analysis.git"
+  },
+  "icon": "image/icon.png",
+  "version": "1.1.0",
+  "engines": {
+    "vscode": "^1.49.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "log-analysis.enableHighlight",
+        "title": "Enable Highlight",
+        "icon": "$(paintcan)"
+      },
+      {
+        "command": "log-analysis.disableHighlight",
+        "title": "Disable Highlight",
+        "icon": "$(paintcan)"
+      },
+      {
+        "command": "log-analysis.enableVisibility",
+        "title": "Enable Visbility",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "log-analysis.disableVisibility",
+        "title": "Disable Visbility",
+        "icon": "$(eye-closed)"
+      },
+      {
+        "command": "log-analysis.turnOnFocusMode",
+        "title": "Turn on Focus Mode",
+        "icon": "$(symbol-keyword)"
+      },
+      {
+        "command": "log-analysis.deleteFilter",
+        "title": "Delete This Filter",
+        "icon": "$(dialog-close)"
+      },
+      {
+        "command": "log-analysis.editFilter",
+        "title": "Edit Regex for This Filter",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "log-analysis.addFilter",
+        "title": "Add a Filter",
+        "icon": "$(plus)"
+      },
+      {
+        "command": "log-analysis.exportFilters",
+        "title": "Export Filters"
+      },
+      {
+        "command": "log-analysis.importFilters",
+        "title": "Import Filters"
+      }
+    ],
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "log-analysis.editFilter",
+          "when": "view == filters",
+          "group": "inline@1"
+        },
+        {
+          "command": "log-analysis.disableHighlight",
+          "when": "view == filters && viewItem =~ /^lit/",
+          "group": "inline@2"
+        },
+        {
+          "command": "log-analysis.enableHighlight",
+          "when": "view == filters && viewItem =~ /^unlit/",
+          "group": "inline@3"
+        },
+        {
+          "command": "log-analysis.disableVisibility",
+          "when": "view == filters && viewItem =~ /-visible/",
+          "group": "inline@4"
+        },
+        {
+          "command": "log-analysis.enableVisibility",
+          "when": "view == filters && viewItem =~ /-invisible/",
+          "group": "inline@5"
+        },
+        {
+          "command": "log-analysis.deleteFilter",
+          "when": "view == filters",
+          "group": "inline@6"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "log-analysis.addFilter",
+          "when": "view == filters",
+          "group": "navigation"
+        },
+        {
+          "command": "log-analysis.turnOnFocusMode",
+          "when": "view == filters",
+          "group": "navigation"
+        },
+        {
+          "command": "log-analysis.importFilters",
+          "when": "view == filters"
+        },
+        {
+          "command": "log-analysis.exportFilters",
+          "when": "view == filters"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "log-analysis.turnOnFocusMode",
+        "key": "ctrl+h",
+        "mac": "cmd+h"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "filters",
+          "name": "Filters"
+        }
+      ]
     }
-	},
-	"scripts": {
-		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -p ./",
-		"lint": "eslint src --ext ts",
-		"watch": "tsc -watch -p ./",
-		"pretest": "npm run compile && npm run lint",
-		"test": "node ./out/test/runTest.js"
-	},
-	"devDependencies": {
-		"@types/vscode": "^1.49.0",
-		"@types/glob": "^7.1.3",
-		"@types/mocha": "^8.0.0",
-		"@types/node": "^14.0.27",
-		"eslint": "^7.6.0",
-		"@typescript-eslint/eslint-plugin": "^3.8.0",
-		"@typescript-eslint/parser": "^3.8.0",
-		"glob": "^7.1.6",
-		"mocha": "^8.1.3",
-		"typescript": "^4.0.2",
-		"vscode-test": "^1.4.0"
-	}
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "lint": "eslint src --ext ts",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.49.0",
+    "@types/glob": "^7.1.3",
+    "@types/mocha": "^8.0.0",
+    "@types/node": "^14.0.27",
+    "eslint": "^7.6.0",
+    "@typescript-eslint/eslint-plugin": "^3.8.0",
+    "@typescript-eslint/parser": "^3.8.0",
+    "glob": "^7.1.6",
+    "mocha": "^8.1.3",
+    "typescript": "^4.0.2",
+    "vscode-test": "^1.4.0"
+  }
 }
