@@ -11,6 +11,14 @@ export type Filter = {
   count: number; //count of lines which match the filter in the active editor
 };
 
+export type Group = {
+    filterArr: Filter[];
+    isHighlighted: boolean; // if the matching lines will be highlighted
+    isShown: boolean; //if the matching lines will be kept in focus mode
+    name: string;
+    id: string; //random generated number
+};
+
 export function generateRandomColor(): string {
   return `hsl(${Math.floor(360 * Math.random())}, 40%, 40%)`;
 }
