@@ -36,14 +36,3 @@ You can use `log-analysis.turnOnFocusMode` command to activate focus mode for th
 ### Import and Export
 
 The filters can be imported and exported as json files. Related commands are `log-analysis.exportFilters` and `log-analysis.importFilters` and the ... icon on the top of the tab can achieve the same goal.
-
-## Known Issues
-
-The circle icon for the newly added filter may not show up properly right after the filter gets created. You can toggle `isHighlighed` by clicking the paint bucket icon to solve this bug. Sorry!
-
-## Release Notes
-
-### 1.1.0
-
-- Add supports for editing, multi tabs
-- Change to use virtual document for focus mode
