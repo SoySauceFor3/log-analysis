@@ -13,9 +13,7 @@ import {
 } from "./commands";
 import { FilterTreeViewProvider } from "./filterTreeViewProvider";
 import { FocusProvider } from "./focusProvider";
-import { Filter, cleanUpIconFiles } from "./utils";
-//GLOBAL to be used for activate and deactivate
-let storageUri: vscode.Uri;
+import { Filter } from "./utils";
 
 export type State = {
   inFocusMode: boolean;
@@ -24,13 +22,9 @@ export type State = {
   disposableFoldingRange: vscode.Disposable | null;
   filterTreeViewProvider: FilterTreeViewProvider;
   focusProvider: FocusProvider;
-  storageUri: vscode.Uri;
 };
 
 export function activate(context: vscode.ExtensionContext) {
-  storageUri = context.globalStorageUri; //get the store path
-  cleanUpIconFiles(storageUri); //clean up the old icon files
-
   //internal globals
   const filterArr: Filter[] = [];
   const state: State = {
@@ -40,7 +34,6 @@ export function activate(context: vscode.ExtensionContext) {
     disposableFoldingRange: null,
     filterTreeViewProvider: new FilterTreeViewProvider(filterArr),
     focusProvider: new FocusProvider(filterArr),
-    storageUri,
   };
   //tell vs code to open focus:... uris with state.focusProvider
   vscode.workspace.registerTextDocumentContentProvider(
@@ -142,6 +135,4 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 // this method is called when your extension is deactivated
-export function deactivate() {
-  cleanUpIconFiles(storageUri);
-}
+export function deactivate() {}

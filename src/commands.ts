@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { State } from "./extension";
-import { generateRandomColor, generateSvgUri, writeSvgContent } from "./utils";
+import { generateRandomColor, generateSvgUri } from "./utils";
 
 export function applyHighlight(
   state: State,
@@ -109,14 +109,12 @@ export function importFilters(state: State) {
             isShown: filterText.isShown as boolean,
             id,
             iconPath: generateSvgUri(
-              state.storageUri,
-              id,
+              filterText.color as string,
               filterText.isHighlighted
             ),
             count: 0,
           };
           state.filterArr.push(filter);
-          writeSvgContent(filter, state.filterTreeViewProvider);
         }
       });
       refreshEditors(state);
@@ -177,18 +175,17 @@ export function addFilter(state: State) {
         return;
       }
       const id = `${Math.random()}`;
+      const color = generateRandomColor();
       const filter = {
         isHighlighted: true,
         isShown: true,
         regex: new RegExp(regexStr),
-        color: generateRandomColor(),
+        color: color,
         id,
-        iconPath: generateSvgUri(state.storageUri, id, true),
+        iconPath: generateSvgUri(color, true),
         count: 0,
       };
       state.filterArr.push(filter);
-      //the order of the following two lines is deliberate (due to some unknown reason of async dependencies...)
-      writeSvgContent(filter, state.filterTreeViewProvider);
       refreshEditors(state);
     });
 }
@@ -218,13 +215,9 @@ export function setHighlight(
   const id = filterTreeItem.id;
   const filter = state.filterArr.find((filter) => filter.id === id);
   filter!.isHighlighted = isHighlighted;
-  filter!.iconPath = generateSvgUri(
-    state.storageUri,
-    filter!.id,
-    filter!.isHighlighted
-  );
+  filter!.iconPath = generateSvgUri(filter!.color, filter!.isHighlighted);
   applyHighlight(state, vscode.window.visibleTextEditors);
-  writeSvgContent(filter!, state.filterTreeViewProvider);
+  refreshEditors(state);
 }
 
 //refresh every visible component, including:
@@ -250,6 +243,6 @@ export function refreshEditors(state: State) {
     }
   });
   applyHighlight(state, vscode.window.visibleTextEditors);
-  console.log("refreshEditos");
+  console.log("refreshEditors");
   state.filterTreeViewProvider.refresh();
 }
