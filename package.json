@@ -8,7 +8,7 @@
     "url": "https://github.com/SoySauceFor3/log-analysis.git"
   },
   "icon": "image/icon.png",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "engines": {
     "vscode": "^1.49.0"
   },
