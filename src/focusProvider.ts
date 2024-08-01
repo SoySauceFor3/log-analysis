@@ -8,7 +8,7 @@ import { Filter, Group } from "./utils";
 export class FocusProvider implements vscode.TextDocumentContentProvider {
   groups: Group[];
 
-  constructor(groups: Group[]) {
+  constructor(groups: Group[], private exFilters: Filter[]) {
     this.groups = groups;
   }
 
@@ -20,6 +20,10 @@ export class FocusProvider implements vscode.TextDocumentContentProvider {
     // start the string with an empty line to make room for the focus mode text decoration
     let resultArr: string[] = [""];
 
+    this.exFilters.forEach(exFilter => {
+      exFilter.count = 0;
+    });
+
     for (let lineIdx = 0; lineIdx < sourceCode.lineCount; lineIdx++) {
       const line = sourceCode.lineAt(lineIdx).text;
       for (const group of this.groups) {
@@ -29,7 +33,19 @@ export class FocusProvider implements vscode.TextDocumentContentProvider {
           }
           let regex = filter.regex;
           if (regex.test(line)) {
-            resultArr.push(line);
+            let isExcluded = false;
+            this.exFilters.forEach(exFilter => {
+              if (exFilter.isShown && exFilter.regex.test(line)) {
+                isExcluded = true;
+                if (exFilter.count === undefined) {
+                  exFilter.count = 0;
+                }
+                exFilter.count++;
+              }
+            });
+            if (!isExcluded) {
+              resultArr.push(line);
+            }
             break;
           }
         }

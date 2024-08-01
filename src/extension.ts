@@ -17,21 +17,26 @@ import {
   deleteProject,
   refreshSettings,
   selectProject,
-  updateExplorerTitle
+  updateExplorerTitle,
+  addExFilter,
+  deleteExGroup
 } from "./commands";
 import { FilterTreeViewProvider } from "./filterTreeViewProvider";
 import { ProjectTreeViewProvider } from "./projectTreeViewProvider";
+import { ExFilterTreeViewProvider } from "./exFilterTreeViewProvider";
 import { FocusProvider } from "./focusProvider";
-import { Project, Group } from "./utils";
+import { Project, Group, Filter } from "./utils";
 import { openSettings } from "./settings";
 
 export type State = {
   inFocusMode: boolean;
   projects: Project[];
   groups: Group[];
+  exFilters: Filter[];
   decorations: vscode.TextEditorDecorationType[];
   disposableFoldingRange: vscode.Disposable | null;
   filterTreeViewProvider: FilterTreeViewProvider;
+  exFilterTreeViewProvider: ExFilterTreeViewProvider;
   projectTreeViewProvider: ProjectTreeViewProvider;
   focusProvider: FocusProvider;
   globalStorageUri: vscode.Uri;
@@ -41,15 +46,18 @@ export function activate(context: vscode.ExtensionContext) {
   //internal globals
   const projects: Project[] = [];
   const groups: Group[] = [];
+  const exFilters: Filter[] = [];
   const state: State = {
     inFocusMode: false,
     projects,
     groups,
+    exFilters,
     decorations: [],
     disposableFoldingRange: null,
     filterTreeViewProvider: new FilterTreeViewProvider(groups),
+    exFilterTreeViewProvider: new ExFilterTreeViewProvider(exFilters),
     projectTreeViewProvider: new ProjectTreeViewProvider(projects),
-    focusProvider: new FocusProvider(groups),
+    focusProvider: new FocusProvider(groups, exFilters),
     globalStorageUri: context.globalStorageUri
   };
 
@@ -68,6 +76,10 @@ export function activate(context: vscode.ExtensionContext) {
     { treeDataProvider: state.filterTreeViewProvider, showCollapseAll: true }
   );
   context.subscriptions.push(view);
+
+  //register filterTreeViewProvider under id 'filters.minus' which gets attached
+  //to the file explorer according to package.json's contributes>views>explorer
+  vscode.window.registerTreeDataProvider('filters.minus', state.exFilterTreeViewProvider);
 
   //register projectTreeViewProvider under id 'filters.settings' which gets attached
   //to filter_project_setting in the Activity Bar according to package.json's contributes>views>filter_project_settings
@@ -281,6 +293,16 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
   context.subscriptions.push(disposibleDeleteGroup);
+
+  let disposibleAddExFilter = vscode.commands.registerCommand(
+    "log-analysis.addExFilter",
+    () => addExFilter(state));
+  context.subscriptions.push(disposibleAddExFilter);
+
+  let disposibleDeleteExGroup = vscode.commands.registerCommand(
+    "log-analysis.deleteExGroup",
+    () => deleteExGroup(state));
+  context.subscriptions.push(disposibleDeleteExGroup);
 }
 
 // this method is called when your extension is deactivated
