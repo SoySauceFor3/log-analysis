@@ -77,6 +77,16 @@
         "icon": "$(plus)"
       },
       {
+        "command": "log-analysis.addExFilter",
+        "title": "Add a Exclusion Filter",
+        "icon": "$(plus)"
+      },
+      {
+        "command": "log-analysis.deleteExGroup",
+        "title": "Delete This Exclusion Group",
+        "icon": "$(trash)"
+      },
+      {
         "command": "log-analysis.deleteProject",
         "title": "Delete This Project",
         "icon": "$(dialog-close)"
@@ -120,7 +130,7 @@
         },
         {
           "command": "log-analysis.editFilter",
-          "when": "view == filters && viewItem =~ /^f-/",
+          "when": "(view == filters || view == filters.minus) && viewItem =~ /^f-/",
           "group": "inline@2"
         },
         {
@@ -135,12 +145,12 @@
         },
         {
           "command": "log-analysis.disableVisibility",
-          "when": "view == filters && viewItem =~ /-visible/",
+          "when": "(view == filters || view == filters.minus) && viewItem =~ /-visible/",
           "group": "inline@4"
         },
         {
           "command": "log-analysis.enableVisibility",
-          "when": "view == filters && viewItem =~ /-invisible/",
+          "when": "(view == filters || view == filters.minus) && viewItem =~ /-invisible/",
           "group": "inline@4"
         },
         {
@@ -150,7 +160,7 @@
         },
         {
           "command": "log-analysis.deleteFilter",
-          "when": "view == filters && viewItem =~ /^f-/",
+          "when": "(view == filters || view == filters.minus) && viewItem =~ /^f-/",
           "group": "inline@5"
         },
         {
@@ -189,6 +199,16 @@
           "command": "log-analysis.refreshSettings",
           "when": "view == filters.settings",
           "group": "navigation@3"
+        },
+        {
+          "command": "log-analysis.addExFilter",
+          "when": "view == filters.minus",
+          "group": "navigation@1"
+        },
+        {
+          "command": "log-analysis.deleteExGroup",
+          "when": "view == filters.minus",
+          "group": "navigation@2"
         }
       ]
     },
@@ -203,7 +223,11 @@
       "explorer": [
         {
           "id": "filters",
-          "name": "Filters"
+          "name": "Filters+"
+        },
+        {
+          "id": "filters.minus",
+          "name": "Filters-"
         }
       ],
       "filter_project_setting": [
