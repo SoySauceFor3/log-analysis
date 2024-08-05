@@ -4,37 +4,63 @@ import {
   applyHighlight,
   deleteFilter,
   editFilter,
-  exportFilters,
-  importFilters,
   refreshEditors,
   setHighlight,
   setVisibility,
   turnOnFocusMode,
+  addGroup,
+  editGroup,
+  deleteGroup,
+  saveProject,
+  addProject,
+  deleteProject,
+  refreshSettings,
+  projectSelected,
+  addExFilter,
+  deleteExGroup
 } from "./commands";
 import { FilterTreeViewProvider } from "./filterTreeViewProvider";
+import { ProjectTreeViewProvider } from "./projectTreeViewProvider";
+import { ExFilterTreeViewProvider } from "./exFilterTreeViewProvider";
 import { FocusProvider } from "./focusProvider";
-import { Filter } from "./utils";
+import { Project, Group, Filter } from "./utils";
+import { openSettings } from "./settings";
 
 export type State = {
   inFocusMode: boolean;
-  filterArr: Filter[];
+  projects: Project[];
+  selectedIndex: number;
+  groups: Group[];
+  exFilters: Filter[];
   decorations: vscode.TextEditorDecorationType[];
   disposableFoldingRange: vscode.Disposable | null;
   filterTreeViewProvider: FilterTreeViewProvider;
+  exFilterTreeViewProvider: ExFilterTreeViewProvider;
+  projectTreeViewProvider: ProjectTreeViewProvider;
   focusProvider: FocusProvider;
 };
 
 export function activate(context: vscode.ExtensionContext) {
   //internal globals
-  const filterArr: Filter[] = [];
+  const projects: Project[] = [];
+  const groups: Group[] = [];
+  const exFilters: Filter[] = [];
   const state: State = {
     inFocusMode: false,
-    filterArr,
+    projects,
+    selectedIndex: -1,
+    groups,
+    exFilters,
     decorations: [],
     disposableFoldingRange: null,
-    filterTreeViewProvider: new FilterTreeViewProvider(filterArr),
-    focusProvider: new FocusProvider(filterArr),
+    filterTreeViewProvider: new FilterTreeViewProvider(groups),
+    exFilterTreeViewProvider: new ExFilterTreeViewProvider(exFilters),
+    projectTreeViewProvider: new ProjectTreeViewProvider(projects),
+    focusProvider: new FocusProvider(groups, exFilters),
   };
+
+  refreshSettings(state);
+
   //tell vs code to open focus:... uris with state.focusProvider
   vscode.workspace.registerTextDocumentContentProvider(
     "focus",
@@ -42,14 +68,29 @@ export function activate(context: vscode.ExtensionContext) {
   );
   //register filterTreeViewProvider under id 'filters' which gets attached
   //to the file explorer according to package.json's contributes>views>explorer
-  vscode.window.registerTreeDataProvider(
+  const view = vscode.window.createTreeView(
     "filters",
-    state.filterTreeViewProvider
+    { treeDataProvider: state.filterTreeViewProvider, showCollapseAll: true }
   );
+  context.subscriptions.push(view);
+
+  //register filterTreeViewProvider under id 'filters.minus' which gets attached
+  //to the file explorer according to package.json's contributes>views>explorer
+  vscode.window.registerTreeDataProvider('filters.minus', state.exFilterTreeViewProvider);
+
+  //register projectTreeViewProvider under id 'filters.settings' which gets attached
+  //to filter_project_setting in the Activity Bar according to package.json's contributes>views>filter_project_settings
+  vscode.window.registerTreeDataProvider(
+    "filters.settings",
+    state.projectTreeViewProvider);
 
   //Add events listener
   var disposableOnDidChangeVisibleTextEditors =
     vscode.window.onDidChangeVisibleTextEditors((event) => {
+      if (vscode.window.visibleTextEditors.length === 0) {
+        console.log("no visible editors");
+        return;
+      }
       refreshEditors(state);
     });
   context.subscriptions.push(disposableOnDidChangeVisibleTextEditors);
@@ -69,29 +110,75 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(disposableOnDidChangeActiveTextEditor);
 
   //register commands
-  let disposableExport = vscode.commands.registerCommand(
-    "log-analysis.exportFilters",
-    () => exportFilters(state)
-  );
-  context.subscriptions.push(disposableExport);
+  let disposableAddProject = vscode.commands.registerCommand(
+    "log-analysis.addProject",
+    () => addProject(state));
+  context.subscriptions.push(disposableAddProject);
 
-  let disposableImport = vscode.commands.registerCommand(
-    "log-analysis.importFilters",
-    () => importFilters(state)
-  );
-  context.subscriptions.push(disposableImport);
+  let disposableDeleteProject = vscode.commands.registerCommand(
+    "log-analysis.deleteProject",
+    (treeItem: vscode.TreeItem) => {
+      if (treeItem === undefined) {
+        vscode.window.showErrorMessage('This command is excuted with button in Log Analysis+ Projects');
+        return;
+      }
+      deleteProject(treeItem, state);
+      if (state.selectedIndex === -1) {
+        view.title = 'Filters';
+      }
+    });
+  context.subscriptions.push(disposableDeleteProject);
+
+  let disposableOpenSettings = vscode.commands.registerCommand(
+    "log-analysis.openSettings",
+    () => openSettings(state));
+  context.subscriptions.push(disposableOpenSettings);
+
+  let disposableRefreshSettings = vscode.commands.registerCommand(
+    "log-analysis.refreshSettings",
+    () => refreshSettings(state));
+  context.subscriptions.push(disposableRefreshSettings);
+
+  let disposableSelectProject = vscode.commands.registerCommand(
+    "log-analysis.selectProject",
+    (treeItem: vscode.TreeItem) => {
+      if (treeItem === undefined) {
+        vscode.window.showErrorMessage('This command is excuted with button in Log Analysis+ Projects');
+        return;
+      }
+      if (projectSelected(treeItem, state)) {
+        view.title = 'Filters (' + treeItem.label + ')';
+        vscode.commands.executeCommand('workbench.view.explorer');
+      }
+    });
+  context.subscriptions.push(disposableSelectProject);
+
+  let disposableSaveProject = vscode.commands.registerCommand(
+    "log-analysis.saveProject",
+    () => saveProject(state));
+  context.subscriptions.push(disposableSaveProject);
 
   let disposableEnableVisibility = vscode.commands.registerCommand(
     "log-analysis.enableVisibility",
-    (filterTreeItem: vscode.TreeItem) =>
-      setVisibility(true, filterTreeItem, state)
+    (treeItem: vscode.TreeItem) => {
+      if (treeItem === undefined) {
+        vscode.window.showErrorMessage('This command is excuted with button in FILTERS');
+        return;
+      }
+      setVisibility(true, treeItem, state);
+    }
   );
   context.subscriptions.push(disposableEnableVisibility);
 
   let disposableDisableVisibility = vscode.commands.registerCommand(
     "log-analysis.disableVisibility",
-    (filterTreeItem: vscode.TreeItem) =>
-      setVisibility(false, filterTreeItem, state)
+    (treeItem: vscode.TreeItem) => {
+      if (treeItem === undefined) {
+        vscode.window.showErrorMessage('This command is excuted with button in FILTERS');
+        return;
+      }
+      setVisibility(false, treeItem, state);
+    }
   );
   context.subscriptions.push(disposableDisableVisibility);
 
@@ -103,36 +190,110 @@ export function activate(context: vscode.ExtensionContext) {
 
   let disposibleAddFilter = vscode.commands.registerCommand(
     "log-analysis.addFilter",
-    () => addFilter(state)
+    (treeItem: vscode.TreeItem) => {
+      if (treeItem === undefined) {
+        vscode.window.showErrorMessage('This command is excuted with button in FILTERS');
+        return;
+      }
+      addFilter(treeItem, state);
+    }
   );
   context.subscriptions.push(disposibleAddFilter);
 
   let disposibleEditFilter = vscode.commands.registerCommand(
     "log-analysis.editFilter",
-    (filterTreeItem: vscode.TreeItem) => editFilter(filterTreeItem, state)
+    (treeItem: vscode.TreeItem) => {
+      if (treeItem === undefined) {
+        vscode.window.showErrorMessage('This command is excuted with button in FILTERS');
+        return;
+      }
+      editFilter(treeItem, state);
+    }
   );
   context.subscriptions.push(disposibleEditFilter);
 
   let disposibleDeleteFilter = vscode.commands.registerCommand(
     "log-analysis.deleteFilter",
-    (filterTreeItem: vscode.TreeItem) => deleteFilter(filterTreeItem, state)
+    (treeItem: vscode.TreeItem) => {
+      if (treeItem === undefined) {
+        vscode.window.showErrorMessage('This command is excuted with button in FILTERS');
+        return;
+      }
+      deleteFilter(treeItem, state);
+    }
   );
   context.subscriptions.push(disposibleDeleteFilter);
 
   let disposibleEnableHighlight = vscode.commands.registerCommand(
     "log-analysis.enableHighlight",
-    (filterTreeItem: vscode.TreeItem) =>
-      setHighlight(true, filterTreeItem, state)
+    (treeItem: vscode.TreeItem) => {
+      if (treeItem === undefined) {
+        vscode.window.showErrorMessage('This command is excuted with button in FILTERS');
+        return;
+      }
+      setHighlight(true, treeItem, state);
+    }
   );
   context.subscriptions.push(disposibleEnableHighlight);
 
   let disposibleDisableHighlight = vscode.commands.registerCommand(
     "log-analysis.disableHighlight",
-    (filterTreeItem: vscode.TreeItem) =>
-      setHighlight(false, filterTreeItem, state)
+    (treeItem: vscode.TreeItem) => {
+      if (treeItem === undefined) {
+        vscode.window.showErrorMessage('This command is excuted with button in FILTERS');
+        return;
+      }
+      setHighlight(false, treeItem, state);
+    }
   );
   context.subscriptions.push(disposibleDisableHighlight);
+
+  let disposibleAddGroup = vscode.commands.registerCommand(
+    "log-analysis.addGroup",
+    () => {
+      if (state.selectedIndex === -1) {
+        vscode.window.showInformationMessage('You need to add a project first!');
+        return;
+      }
+      addGroup(state);
+    }
+  );
+  context.subscriptions.push(disposibleAddGroup);
+
+  let disposibleEditGroup = vscode.commands.registerCommand(
+    "log-analysis.editGroup",
+    (treeItem: vscode.TreeItem) => {
+      if (treeItem === undefined) {
+        vscode.window.showErrorMessage('This command is excuted with button in FILTERS');
+        return;
+      }
+      editGroup(treeItem, state);
+    }
+  );
+  context.subscriptions.push(disposibleEditGroup);
+
+  let disposibleDeleteGroup = vscode.commands.registerCommand(
+    "log-analysis.deleteGroup",
+    (treeItem: vscode.TreeItem) => {
+      if (treeItem === undefined) {
+        vscode.window.showErrorMessage('This command is excuted with button in FILTERS');
+        return;
+      }
+      deleteGroup(treeItem, state);
+    }
+  );
+  context.subscriptions.push(disposibleDeleteGroup);
+
+  let disposibleAddExFilter = vscode.commands.registerCommand(
+    "log-analysis.addExFilter",
+    () => addExFilter(state));
+  context.subscriptions.push(disposibleAddExFilter);
+
+  let disposibleDeleteExGroup = vscode.commands.registerCommand(
+    "log-analysis.deleteExGroup",
+    () => deleteExGroup(state));
+  context.subscriptions.push(disposibleDeleteExGroup);
 }
 
 // this method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() { }
