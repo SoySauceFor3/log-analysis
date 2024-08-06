@@ -36,10 +36,11 @@ export function activate(context: vscode.ExtensionContext) {
     focusProvider: new FocusProvider(filterArr),
   };
   //tell vs code to open focus:... uris with state.focusProvider
-  vscode.workspace.registerTextDocumentContentProvider(
+  const disposableFocus = vscode.workspace.registerTextDocumentContentProvider(
     "focus",
     state.focusProvider
   );
+  context.subscriptions.push(disposableFocus);
   //register filterTreeViewProvider under id 'filters' which gets attached
   //to the file explorer according to package.json's contributes>views>explorer
   vscode.window.registerTreeDataProvider(
