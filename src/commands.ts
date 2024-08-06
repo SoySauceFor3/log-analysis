@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { State } from "./extension";
-import { generateRandomColor, generateSvgUri } from "./utils";
+import { Group, generateRandomColor, generateSvgUri } from "./utils";
 
 export function applyHighlight(
   state: State,
@@ -14,60 +14,67 @@ export function applyHighlight(
     let sourceCode = editor.document.getText();
     const sourceCodeArr = sourceCode.split("\n");
 
-    //apply new decorations
-    state.filterArr.forEach((filter) => {
-      let filterCount = 0;
-      //if filter's highlight is off, or this editor is in focus mode and filter is not shown, we don't want to put decorations
-      //especially when a specific line fits more than one filter regex and some of them are shown while others are not.
-      if (
-        filter.isHighlighted &&
-        (!editor.document.uri.toString().startsWith("focus:") || filter.isShown)
-      ) {
-        let lineNumbers: number[] = [];
-        for (let lineIdx = 0; lineIdx < sourceCodeArr.length; lineIdx++) {
-          if (filter.regex.test(sourceCodeArr[lineIdx])) {
-            lineNumbers.push(lineIdx);
+    state.groupArr.forEach((group) => {
+      //apply new decorations
+      group.filterArr.forEach((filter) => {
+        let filterCount = 0;
+        //if filter's highlight is off, or this editor is in focus mode and filter is not shown, we don't want to put decorations
+        //especially when a specific line fits more than one filter regex and some of them are shown while others are not.
+        if (filter.isHighlighted && (!editor.document.uri.toString().startsWith('focus:') || filter.isShown)) {
+          let lineNumbers: number[] = [];
+          for (let lineIdx = 0; lineIdx < sourceCodeArr.length; lineIdx++) {
+            if (filter.regex.test(sourceCodeArr[lineIdx])) {
+              lineNumbers.push(lineIdx);
+            }
           }
-        }
-        filterCount = lineNumbers.length;
+          filterCount = lineNumbers.length;
 
-        const decorationsArray = lineNumbers.map((lineIdx) => {
-          return new vscode.Range(
-            new vscode.Position(lineIdx, 0),
-            new vscode.Position(lineIdx, 0) //position does not matter because isWholeLine is set to true
+          const decorationsArray = lineNumbers.map((lineIdx) => {
+            return new vscode.Range(
+              new vscode.Position(lineIdx, 0),
+              new vscode.Position(lineIdx, 0) //position does not matter because isWholeLine is set to true
+            );
+          });
+          let decorationType = vscode.window.createTextEditorDecorationType(
+            {
+              backgroundColor: filter.color,
+              isWholeLine: true,
+            }
           );
-        });
-        let decorationType = vscode.window.createTextEditorDecorationType({
-          backgroundColor: filter.color,
-          isWholeLine: true,
-        });
-        //store the decoration type for future removal
-        state.decorations.push(decorationType);
-        editor.setDecorations(decorationType, decorationsArray);
-      }
-      //filter.count represents the count of the lines for the activeEditor, so if the current editor is active, we update the count
-      if (editor === vscode.window.activeTextEditor) {
-        filter.count = filterCount;
-      }
+          //store the decoration type for future removal
+          state.decorations.push(decorationType);
+          editor.setDecorations(decorationType, decorationsArray);
+        }
+        //filter.count represents the count of the lines for the activeEditor, so if the current editor is active, we update the count
+        if (editor === vscode.window.activeTextEditor) {
+          filter.count = filterCount;
+        }
+      });
     });
-  });
+  })
 }
 
 //record the important fields of each filter on a json object and open a new tab for the json
 export function exportFilters(state: State) {
-  const content = JSON.stringify(
-    state.filterArr.map((filter) => {
-      return {
+  const content = JSON.stringify({
+    groups: state.groupArr.map(group => ({
+      name: group.name,
+      isHighlighted: group.isHighlighted,
+      isShown: group.isShown,
+      filterArr: group.filterArr.map(filter => ({
         regexText: filter.regex.source,
         color: filter.color,
         isHighlighted: filter.isHighlighted,
-        isShown: filter.isShown,
-      };
-    })
-  );
+        isShown: filter.isShown
+      }))
+    }))
+  }, null, 2);
+
   vscode.workspace.openTextDocument({
     content: content,
-    language: "json",
+    language: "json"
+  }).then(textDocument => {
+    vscode.window.showTextDocument(textDocument);
   });
 }
 
@@ -93,29 +100,33 @@ export function importFilters(state: State) {
       if (typeof parsed !== "object") {
         return;
       }
-      const array = parsed as any[];
-      array.forEach((filterText) => {
-        if (
-          typeof filterText.regexText === "string" &&
-          typeof filterText.color === "string" &&
-          typeof filterText.isHighlighted === "boolean" &&
-          typeof filterText.isShown === "boolean"
-        ) {
-          const id = `${Math.random()}`;
+      parsed.groups.map((g: any) => {
+        const groupId = `${Math.random()}`;
+        const group: Group = {
+          filterArr: [],
+          name: g.name as string,
+          isHighlighted: g.isHighlighted as boolean,
+          isShown: g.isShown as boolean,
+          id: groupId
+        };
+
+        g.filterArr.map((f: any) => {
+          const filterId = `${Math.random()}`;
           const filter = {
-            regex: new RegExp(filterText.regexText),
-            color: filterText.color as string,
-            isHighlighted: filterText.isHighlighted as boolean,
-            isShown: filterText.isShown as boolean,
-            id,
+            regex: new RegExp(f.regexText),
+            color: f.color as string,
+            isHighlighted: f.isHighlighted as boolean,
+            isShown: f.isShown as boolean,
+            id: filterId,
             iconPath: generateSvgUri(
-              filterText.color as string,
-              filterText.isHighlighted
+              f.color as string,
+              f.isHighlighted
             ),
-            count: 0,
+            count: 0
           };
-          state.filterArr.push(filter);
-        }
+          group.filterArr.push(filter);
+        });
+        state.groupArr.push(group);
       });
       refreshEditors(state);
     });
@@ -124,12 +135,22 @@ export function importFilters(state: State) {
 //set bool for whether the lines matched the given filter will be kept for focus mode
 export function setVisibility(
   isShown: boolean,
-  filterTreeItem: vscode.TreeItem,
+  treeItem: vscode.TreeItem,
   state: State
 ) {
-  const id = filterTreeItem.id;
-  const filter = state.filterArr.find((filter) => filter.id === id);
-  filter!.isShown = isShown;
+  const id = treeItem.id;
+  const group = state.groupArr.find(group => (group.id === id));
+  if (group !== undefined) {
+    group.isShown = isShown;
+    group.filterArr.map(filter => (filter.isShown = isShown));
+  } else {
+    state.groupArr.map(group => {
+      const filter = group.filterArr.find(filter => (filter.id === id));
+      if (filter !== undefined) {
+        filter.isShown = isShown;
+      }
+    });
+  }
   refreshEditors(state);
 }
 
@@ -156,24 +177,27 @@ export function turnOnFocusMode(state: State) {
   }
 }
 
-export function deleteFilter(filterTreeItem: vscode.TreeItem, state: State) {
-  const deleteIndex = state.filterArr.findIndex(
-    (filter) => filter.id === filterTreeItem.id
-  );
-  state.filterArr.splice(deleteIndex, 1);
+export function deleteFilter(treeItem: vscode.TreeItem, state: State) {
+  state.groupArr.map(group => {
+    const deleteIndex = group.filterArr.findIndex(filter => (filter.id === treeItem.id));
+    if (deleteIndex !== -1) {
+      group.filterArr.splice(deleteIndex, 1);
+    }
+  });
   refreshEditors(state);
 }
 
-export function addFilter(state: State) {
+export function addFilter(treeItem: vscode.TreeItem, state: State) {
   vscode.window
     .showInputBox({
-      prompt: "Type a regex to filter",
+      prompt: "[FILTER] Type a regex to filter",
       ignoreFocusOut: false,
     })
     .then((regexStr) => {
       if (regexStr === undefined) {
         return;
       }
+      const group = state.groupArr.find(group => (group.id === treeItem.id));
       const id = `${Math.random()}`;
       const color = generateRandomColor();
       const filter = {
@@ -185,37 +209,54 @@ export function addFilter(state: State) {
         iconPath: generateSvgUri(color, true),
         count: 0,
       };
-      state.filterArr.push(filter);
+      group!.filterArr.push(filter);
       refreshEditors(state);
     });
 }
 
-export function editFilter(filterTreeItem: vscode.TreeItem, state: State) {
+export function editFilter(treeItem: vscode.TreeItem, state: State) {
   vscode.window
     .showInputBox({
-      prompt: "Type a new regex",
+      prompt: "[FILTER] Type a new regex",
       ignoreFocusOut: false,
     })
     .then((regexStr) => {
       if (regexStr === undefined) {
         return;
       }
-      const id = filterTreeItem.id;
-      const filter = state.filterArr.find((filter) => filter.id === id);
-      filter!.regex = new RegExp(regexStr);
+      const id = treeItem.id;
+      state.groupArr.map(group => {
+        const filter = group.filterArr.find(filter => (filter.id === id));
+        if (filter !== undefined) {
+          filter.regex = new RegExp(regexStr);
+        }
+      });
       refreshEditors(state);
     });
 }
 
 export function setHighlight(
   isHighlighted: boolean,
-  filterTreeItem: vscode.TreeItem,
+  treeItem: vscode.TreeItem,
   state: State
 ) {
-  const id = filterTreeItem.id;
-  const filter = state.filterArr.find((filter) => filter.id === id);
-  filter!.isHighlighted = isHighlighted;
-  filter!.iconPath = generateSvgUri(filter!.color, filter!.isHighlighted);
+  const id = treeItem.id;
+  const group = state.groupArr.find(group => (group.id === id));
+  if (group !== undefined) {
+    group.isHighlighted = isHighlighted;
+    group.filterArr.map(filter => {
+      filter.isHighlighted = isHighlighted;
+      filter.iconPath = generateSvgUri(filter.color, filter.isHighlighted);
+    });
+  } else {
+    state.groupArr.map(group => {
+      const filter = group.filterArr.find(filter => (filter.id === id));
+      if (filter !== undefined) {
+        filter.isHighlighted = isHighlighted;
+        filter.iconPath = generateSvgUri(filter.color, filter.isHighlighted);;
+      }
+    });
+  }
   applyHighlight(state, vscode.window.visibleTextEditors);
   refreshEditors(state);
 }
@@ -245,4 +286,53 @@ export function refreshEditors(state: State) {
   applyHighlight(state, vscode.window.visibleTextEditors);
   console.log("refreshEditors");
   state.filterTreeViewProvider.refresh();
+}
+
+export function refreshTreeView(state: State) {
+  console.log("refresh only tree view");
+  state.filterTreeViewProvider.refresh();
+}
+
+export function addGroup(state: State) {
+  vscode.window.showInputBox({
+    prompt: '[GROUP] Type a new group name',
+    ignoreFocusOut: false
+  }).then(name => {
+    if (name === undefined) {
+      return;
+    }
+    const id = `${Math.random()}`;
+    const group = {
+      filterArr: [],
+      isHighlighted: true,
+      isShown: true,
+      name: name,
+      id
+    };
+    state.groupArr.push(group);
+    refreshTreeView(state);
+  });
+}
+
+export function editGroup(treeItem: vscode.TreeItem, state: State) {
+  vscode.window.showInputBox({
+    prompt: "[GROUP] Type a new group name",
+    ignoreFocusOut: false
+  }).then(name => {
+    if (name === undefined) {
+      return;
+    }
+    const id = treeItem.id;
+    const group = state.groupArr.find(group => (group.id === id));
+    group!.name = name;
+    refreshTreeView(state);
+  });
+}
+
+export function deleteGroup(treeItem: vscode.TreeItem, state: State) {
+  const deleteIndex = state.groupArr.findIndex(group => (group.id === treeItem.id));
+  if (deleteIndex !== -1) {
+    state.groupArr.splice(deleteIndex, 1);
+  }
+  refreshEditors(state);
 }

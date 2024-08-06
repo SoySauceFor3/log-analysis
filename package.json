@@ -22,6 +22,21 @@
   "contributes": {
     "commands": [
       {
+        "command": "log-analysis.addGroup",
+        "title": "Add Group",
+        "icon": "$(file-directory-create)"
+      },
+      {
+        "command": "log-analysis.editGroup",
+        "title": "Edit a new name for This Group",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "log-analysis.deleteGroup",
+        "title": "Delete This Group",
+        "icon": "$(dialog-close)"
+      },
+      {
         "command": "log-analysis.enableHighlight",
         "title": "Enable Highlight",
         "icon": "$(paintcan)"
@@ -73,18 +88,28 @@
     "menus": {
       "view/item/context": [
         {
-          "command": "log-analysis.editFilter",
-          "when": "view == filters",
+          "command": "log-analysis.addFilter",
+          "when": "view == filters && viewItem =~ /^g-/",
           "group": "inline@1"
         },
         {
-          "command": "log-analysis.disableHighlight",
-          "when": "view == filters && viewItem =~ /^lit/",
+          "command": "log-analysis.editGroup",
+          "when": "view == filters && viewItem =~ /^g-/",
           "group": "inline@2"
         },
         {
+          "command": "log-analysis.editFilter",
+          "when": "view == filters && viewItem =~ /^f-/",
+          "group": "inline@2"
+        },
+        {
+          "command": "log-analysis.disableHighlight",
+          "when": "view == filters && viewItem =~ /-lit/",
+          "group": "inline@3"
+        },
+        {
           "command": "log-analysis.enableHighlight",
-          "when": "view == filters && viewItem =~ /^unlit/",
+          "when": "view == filters && viewItem =~ /-unlit/",
           "group": "inline@3"
         },
         {
@@ -95,24 +120,29 @@
         {
           "command": "log-analysis.enableVisibility",
           "when": "view == filters && viewItem =~ /-invisible/",
+          "group": "inline@4"
+        },
+        {
+          "command": "log-analysis.deleteGroup",
+          "when": "view == filters && viewItem =~ /^g-/",
           "group": "inline@5"
         },
         {
           "command": "log-analysis.deleteFilter",
-          "when": "view == filters",
-          "group": "inline@6"
+          "when": "view == filters && viewItem =~ /^f-/",
+          "group": "inline@5"
         }
       ],
       "view/title": [
         {
-          "command": "log-analysis.addFilter",
+          "command": "log-analysis.addGroup",
           "when": "view == filters",
-          "group": "navigation"
+          "group": "navigation@1"
         },
         {
           "command": "log-analysis.turnOnFocusMode",
           "when": "view == filters",
-          "group": "navigation"
+          "group": "navigation@2"
         },
         {
           "command": "log-analysis.importFilters",
