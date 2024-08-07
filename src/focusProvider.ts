@@ -6,10 +6,7 @@ import { Filter, Group } from "./utils";
 //<original uri> is the escaped uri of the original, unfocused document.
 //VSCode uses this provider to generate virtual read-only files based on real files
 export class FocusProvider implements vscode.TextDocumentContentProvider {
-  groupArr: Group[];
-
-  constructor(groupArr: Group[]) {
-    this.groupArr = groupArr;
+  constructor(private groups: Group[], private exFilters: Filter[]) {
   }
 
   //open the original document specified by the uri and return the focused version of its text
@@ -20,16 +17,32 @@ export class FocusProvider implements vscode.TextDocumentContentProvider {
     // start the string with an empty line to make room for the focus mode text decoration
     let resultArr: string[] = [""];
 
+    this.exFilters.forEach(exFilter => {
+      exFilter.count = 0;
+    });
+
     for (let lineIdx = 0; lineIdx < sourceCode.lineCount; lineIdx++) {
       const line = sourceCode.lineAt(lineIdx).text;
-      for (const group of this.groupArr) {
-        for (const filter of group.filterArr) {
+      for (const group of this.groups) {
+        for (const filter of group.filters) {
           if (!filter.isShown) {
             continue;
           }
           let regex = filter.regex;
           if (regex.test(line)) {
-            resultArr.push(line);
+            let isExcluded = false;
+            this.exFilters.forEach(exFilter => {
+              if (exFilter.isShown && exFilter.regex.test(line)) {
+                isExcluded = true;
+                if (exFilter.count === undefined) {
+                  exFilter.count = 0;
+                }
+                exFilter.count++;
+              }
+            });
+            if (!isExcluded) {
+              resultArr.push(line);
+            }
             break;
           }
         }
@@ -44,5 +57,9 @@ export class FocusProvider implements vscode.TextDocumentContentProvider {
   //when this function gets called, the provideTextDocumentContent will be called again
   refresh(uri: vscode.Uri): void {
     this.onDidChangeEmitter.fire(uri);
+  }
+
+  update(groups: Group[]) {
+    this.groups = groups;
   }
 }

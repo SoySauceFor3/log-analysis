@@ -3,7 +3,7 @@ import { Filter, Group } from "./utils";
 
 //provides filters as tree items to be displayed on the sidebar
 export class FilterTreeViewProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
-  constructor(private groupArr: Group[]) { }
+  constructor(private groups: Group[]) { }
 
   getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
     return element;
@@ -13,10 +13,10 @@ export class FilterTreeViewProvider implements vscode.TreeDataProvider<vscode.Tr
   //getChildren() returns the root elements (all the filters)
   getChildren(element?: vscode.TreeItem): Thenable<vscode.TreeItem[]> {
     if (element === undefined) {
-      return Promise.resolve(this.groupArr.map(group => new GroupItem(group)));
+      return Promise.resolve(this.groups.map(group => new GroupItem(group)));
     }
     if (element instanceof GroupItem) {
-      return Promise.resolve(element.filterArr.map(filter => new FilterItem(filter)));
+      return Promise.resolve(element.filters.map(filter => new FilterItem(filter)));
     } else {
       return Promise.resolve([]);
     }
@@ -25,19 +25,34 @@ export class FilterTreeViewProvider implements vscode.TreeDataProvider<vscode.Tr
   private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined> = new vscode.EventEmitter<vscode.TreeItem | undefined>();
   readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined> = this._onDidChangeTreeData.event;
 
-  refresh(): void {
-    console.log("in refresh");
-    this._onDidChangeTreeData.fire(undefined);
+  refresh(element?: vscode.TreeItem): void {
+    if (element === undefined) {
+      console.log("refresh all");
+    } else {
+      console.log("refresh item");
+    }
+    this._onDidChangeTreeData.fire(element);
+  }
+
+  update(groups: Group[]): void {
+    this.groups = groups;
+    this.refresh();
   }
 }
 
 export class GroupItem extends vscode.TreeItem {
-  filterArr: Filter[] = [];
+  filters: Filter[] = [];
 
   constructor(group: Group) {
     super(group.name, vscode.TreeItemCollapsibleState.Collapsed);
+    this.contextValue = 'g-unlit-invisible';
+    this.update(group);
+  }
+
+  update(group: Group) {
+    this.label = group.name;
     this.id = group.id;
-    this.filterArr = group.filterArr;
+    this.filters = group.filters;
 
     if (group.isHighlighted) {
       if (group.isShown) {
@@ -72,6 +87,11 @@ export class GroupItem extends vscode.TreeItem {
 export class FilterItem extends vscode.TreeItem {
   constructor(filter: Filter) {
     super(filter.regex.toString(), vscode.TreeItemCollapsibleState.None);
+    this.contextValue = 'f-unlit-invisible';
+    this.update(filter);
+  }
+
+  update(filter: Filter) {
     this.label = filter.regex.toString();
     this.id = filter.id;
     this.iconPath = filter.iconPath;
