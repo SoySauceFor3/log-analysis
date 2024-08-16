@@ -3,6 +3,9 @@ import { Filter, Group } from "./utils";
 
 //provides filters as tree items to be displayed on the sidebar
 export class FilterTreeViewProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
+  private groupItemCache: Map<string, GroupItem> = new Map();
+  private filterItemCache: Map<string, FilterItem> = new Map();
+
   constructor(private groups: Group[]) { }
 
   getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
@@ -13,10 +16,10 @@ export class FilterTreeViewProvider implements vscode.TreeDataProvider<vscode.Tr
   //getChildren() returns the root elements (all the filters)
   getChildren(element?: vscode.TreeItem): Thenable<vscode.TreeItem[]> {
     if (element === undefined) {
-      return Promise.resolve(this.groups.map(group => new GroupItem(group)));
+      return Promise.resolve(this.groups.map(group => this.getNewGroupItem(group)));
     }
     if (element instanceof GroupItem) {
-      return Promise.resolve(element.filters.map(filter => new FilterItem(filter)));
+      return Promise.resolve(element.filters.map(filter => this.getNewFilterItem(filter)));
     } else {
       return Promise.resolve([]);
     }
@@ -27,16 +30,48 @@ export class FilterTreeViewProvider implements vscode.TreeDataProvider<vscode.Tr
 
   refresh(element?: vscode.TreeItem): void {
     if (element === undefined) {
-      console.log("refresh all");
+      console.log("[filter]: refresh all");
     } else {
-      console.log("refresh item");
+      console.log("[filter]: refresh item");
     }
     this._onDidChangeTreeData.fire(element);
   }
 
   update(groups: Group[]): void {
     this.groups = groups;
+    this.clearUnusedCacheItem();
     this.refresh();
+  }
+
+  clearUnusedCacheItem() {
+    this.groups.forEach(group => {
+      group.filters.forEach(filter => {
+        this.filterItemCache.delete(filter.id);
+      });
+      this.groupItemCache.delete(group.id);
+    });
+  }
+
+  getNewGroupItem(group: Group): GroupItem {
+    let groupItem = this.groupItemCache.get(group.id);
+    if (groupItem === undefined) {
+      groupItem = new GroupItem(group);
+      this.groupItemCache.set(group.id, groupItem);
+    } else {
+      groupItem.update(group);
+    }
+    return groupItem;
+  }
+
+  getNewFilterItem(filter: Filter): FilterItem {
+    let filterItem = this.filterItemCache.get(filter.id);
+    if (filterItem === undefined) {
+      filterItem = new FilterItem(filter);
+      this.filterItemCache.set(filter.id, filterItem);
+    } else {
+      filterItem.update(filter);
+    }
+    return filterItem;
   }
 }
 

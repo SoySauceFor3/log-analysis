@@ -19,8 +19,13 @@ export class ProjectTreeViewProvider implements vscode.TreeDataProvider<vscode.T
   private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined> = new vscode.EventEmitter<vscode.TreeItem | undefined>();
   readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined> = this._onDidChangeTreeData.event;
 
-  refresh(): void {
-    this._onDidChangeTreeData.fire(undefined);
+  refresh(element?: vscode.TreeItem): void {
+    if (element === undefined) {
+      console.log("[project]: refresh all");
+    } else {
+      console.log("[project]: refresh item");
+    }
+    this._onDidChangeTreeData.fire(element);
   }
 
   update(projects: Project[]) {

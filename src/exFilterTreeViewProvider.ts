@@ -20,8 +20,13 @@ export class ExFilterTreeViewProvider implements vscode.TreeDataProvider<vscode.
   private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined> = new vscode.EventEmitter<vscode.TreeItem | undefined>();
   readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined> = this._onDidChangeTreeData.event;
 
-  refresh(): void {
-    this._onDidChangeTreeData.fire(undefined);
+  refresh(element?: vscode.TreeItem): void {
+    if (element === undefined) {
+      console.log("[ex-filter]: refresh all");
+    } else {
+      console.log("[ex-filter]: refresh item");
+    }
+    this._onDidChangeTreeData.fire(element);
   }
 }
 
