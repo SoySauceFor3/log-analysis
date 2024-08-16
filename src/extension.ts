@@ -88,6 +88,10 @@ export function activate(context: vscode.ExtensionContext) {
   //Add events listener
   var disposableOnDidChangeVisibleTextEditors =
     vscode.window.onDidChangeVisibleTextEditors((event) => {
+      if (vscode.window.visibleTextEditors.length === 0) {
+        console.log("no visible editors");
+        return;
+      }
       refreshEditors(state);
     });
   context.subscriptions.push(disposableOnDidChangeVisibleTextEditors);

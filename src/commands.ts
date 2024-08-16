@@ -3,6 +3,21 @@ import { State } from "./extension";
 import { generateRandomColor, generateSvgUri } from "./utils";
 import { readSettings, saveSettings } from "./settings";
 
+function hasHighlightedFilter(state: State): boolean {
+  let hasHighlighted: boolean = false;
+
+  for (const group of state.groups) {
+    for (const filter of group.filters) {
+      if (filter.isHighlighted) {
+        hasHighlighted = true;
+        break;
+      }
+    }
+  }
+
+  return hasHighlighted;
+}
+
 export function applyHighlight(
   state: State,
   editors: readonly vscode.TextEditor[]
@@ -10,6 +25,11 @@ export function applyHighlight(
   // remove old decorations from all the text editor using the given decorationType
   state.decorations.forEach((decorationType) => decorationType.dispose());
   state.decorations = [];
+
+  if (!hasHighlightedFilter(state)) {
+    console.log("no highlight");
+    return;
+  }
 
   editors.forEach((editor) => {
     let sourceCode = editor.document.getText();
