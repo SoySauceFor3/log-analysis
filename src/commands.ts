@@ -79,7 +79,7 @@ export function setVisibility(
       }
     });
   }
-  refreshEditors(state);
+  refreshEditors(state, treeItem);
 }
 
 //turn on focus mode for the active editor. Will create a new tab if not already for the virtual document
@@ -106,6 +106,8 @@ export function turnOnFocusMode(state: State) {
 }
 
 export function deleteFilter(treeItem: vscode.TreeItem, state: State) {
+  const parentItem = state.filterTreeViewProvider.getParentItem(treeItem);
+
   const deleteIndex = state.exFilters.findIndex(filter => (filter.id === treeItem.id));
   if (deleteIndex !== -1) {
     state.exFilters.splice(deleteIndex, 1);
@@ -117,7 +119,8 @@ export function deleteFilter(treeItem: vscode.TreeItem, state: State) {
       group.filters.splice(deleteIndex, 1);
     }
   });
-  refreshEditors(state);
+
+  refreshEditors(state, parentItem);
 }
 
 export function addFilter(treeItem: vscode.TreeItem, state: State) {
@@ -143,7 +146,9 @@ export function addFilter(treeItem: vscode.TreeItem, state: State) {
         count: 0,
       };
       group!.filters.push(filter);
-      refreshEditors(state);
+
+      const parentItem = state.filterTreeViewProvider.getParentItem(treeItem);
+      refreshEditors(state, parentItem);
     });
 }
 
@@ -168,7 +173,7 @@ export function editFilter(treeItem: vscode.TreeItem, state: State) {
           filter.regex = new RegExp(regexStr);
         }
       });
-      refreshEditors(state);
+      refreshEditors(state, treeItem);
     });
 }
 
@@ -195,7 +200,7 @@ export function setHighlight(
     });
   }
   applyHighlight(state, vscode.window.visibleTextEditors);
-  refreshEditors(state);
+  refreshEditors(state, treeItem);
 }
 
 //refresh every visible component, including:
@@ -203,7 +208,7 @@ export function setHighlight(
 //decoration of the visible focus mode virtual document,
 //highlight decoration of visible editors
 //treeview on the side bar
-export function refreshEditors(state: State) {
+export function refreshEditors(state: State, treeItem?: vscode.TreeItem) {
   vscode.window.visibleTextEditors.forEach((editor) => {
     let escapedUri = editor.document.uri.toString();
     if (escapedUri.startsWith("focus:")) {
@@ -222,13 +227,13 @@ export function refreshEditors(state: State) {
   });
   applyHighlight(state, vscode.window.visibleTextEditors);
   console.log("refreshEditors");
-  state.filterTreeViewProvider.refresh();
-  state.exFilterTreeViewProvider.refresh();
+  state.filterTreeViewProvider.refresh(treeItem);
+  state.exFilterTreeViewProvider.refresh(treeItem);
 }
 
-export function refreshFilterTreeView(state: State) {
+export function refreshFilterTreeView(state: State, treeItem?: vscode.TreeItem) {
   console.log("refresh only tree view");
-  state.filterTreeViewProvider.refresh();
+  state.filterTreeViewProvider.refresh(treeItem);
 }
 
 export function updateFilterAndTreeView(state: State) {
@@ -274,7 +279,7 @@ export function editGroup(treeItem: vscode.TreeItem, state: State) {
     const id = treeItem.id;
     const group = state.groups.find(group => (group.id === id));
     group!.name = name;
-    refreshFilterTreeView(state);
+    refreshFilterTreeView(state, treeItem);
   });
 }
 

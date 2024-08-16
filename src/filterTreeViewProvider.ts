@@ -32,15 +32,49 @@ export class FilterTreeViewProvider implements vscode.TreeDataProvider<vscode.Tr
     if (element === undefined) {
       console.log("[filter]: refresh all");
     } else {
+      this.updateElement(element);
       console.log("[filter]: refresh item");
     }
     this._onDidChangeTreeData.fire(element);
+  }
+
+  updateElement(element: vscode.TreeItem): void {
+    if (element instanceof GroupItem) {
+      const group = this.groups.find(g => (g.id === element.id));
+      if (group !== undefined) {
+        element.update(group);
+      }
+    } else if (element instanceof FilterItem) {
+      this.groups.map(g => {
+        const filter = g.filters.find(f => (f.id === element.id));
+        if (filter !== undefined) {
+          element.update(filter);
+        }
+      });
+    }
   }
 
   update(groups: Group[]): void {
     this.groups = groups;
     this.clearUnusedCacheItem();
     this.refresh();
+  }
+
+  getParentItem(element: vscode.TreeItem): vscode.TreeItem {
+    if (element instanceof GroupItem) {
+      return element;
+    }
+
+    for (const group of this.groups) {
+      const index = group.filters.findIndex(f => (f.id === element.id));
+      if (index !== -1) {
+        let groupItem = this.groupItemCache.get(group.id);
+        if (groupItem !== undefined) {
+          return groupItem;
+        }
+      }
+    }
+    return element;
   }
 
   clearUnusedCacheItem() {

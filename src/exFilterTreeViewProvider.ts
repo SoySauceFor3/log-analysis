@@ -25,8 +25,18 @@ export class ExFilterTreeViewProvider implements vscode.TreeDataProvider<vscode.
       console.log("[ex-filter]: refresh all");
     } else {
       console.log("[ex-filter]: refresh item");
+      this.updateElement(element);
     }
     this._onDidChangeTreeData.fire(element);
+  }
+
+  updateElement(element: vscode.TreeItem): void {
+    if (element instanceof FilterItem) {
+      const filter = this.filters.find(f => (f.id === element.id));
+      if (filter !== undefined) {
+        element.update(filter);
+      }
+    }
   }
 }
 
