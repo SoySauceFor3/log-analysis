@@ -12,11 +12,18 @@ export type Filter = {
 };
 
 export type Group = {
-    filterArr: Filter[];
-    isHighlighted: boolean; // if the matching lines will be highlighted
-    isShown: boolean; //if the matching lines will be kept in focus mode
-    name: string;
-    id: string; //random generated number
+  filters: Filter[];
+  isHighlighted: boolean; // if the matching lines will be highlighted
+  isShown: boolean; //if the matching lines will be kept in focus mode
+  name: string;
+  id: string; //random generated number
+};
+
+export type Project = {
+  groups: Group[];
+  name: string;
+  id: string;
+  selected: boolean;
 };
 
 export function generateRandomColor(): string {
@@ -34,4 +41,23 @@ export function generateSvgUri(
   const svgContent = isHighlighted ? fullSvg : emptySvg;
   const dataUri = `data:image/svg+xml;base64,${btoa(svgContent)}`;
   return vscode.Uri.parse(dataUri);
+}
+
+export function setStatusBarMessage(message: string) {
+  vscode.window.setStatusBarMessage(`LOG ANALYSIS: ${message}`, 5000);
+}
+
+export function getProjectSelectedIndex(projects: Project[]): number {
+  const selectedIndex = projects.findIndex(p => p.selected);
+  return selectedIndex;
+}
+
+export function setProjectSelectedFlag(projects: Project[], index: number) {
+  projects.forEach(p => p.selected = false);
+
+  if (index >= 0 && index < projects.length) {
+    projects[index].selected = true;
+  } else {
+    console.log(`Invalid index: ${index}`);
+  }
 }
