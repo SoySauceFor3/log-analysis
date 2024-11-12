@@ -27,8 +27,10 @@ export type Project = {
   selected: boolean;
 };
 
-export function generateRandomColor(): string {
-  return `hsl(${Math.floor(360 * Math.random())}, 40%, 40%)`;
+export function generateRandomColor(isExclude: boolean = false): string {
+  return isExclude
+    ? `hsl(${Math.floor(360 * Math.random())}, 40%, 80%)`
+    : `hsl(${Math.floor(360 * Math.random())}, 50%, 40%)`;
 }
 
 // Creates an svg icon representing a filter: a filled circle if the filter is highlighted, or an empty circle otherwise.

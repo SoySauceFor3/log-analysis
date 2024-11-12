@@ -143,8 +143,8 @@ export function addFilter(treeItem: vscode.TreeItem, state: State) {
           }
           const group = state.groups.find((group) => group.id === treeItem.id);
           const id = `${Math.random()}`;
-          const color = generateRandomColor();
           const isExclude = selected === "Add an exclude filter";
+          const color = generateRandomColor(isExclude);
           const filter: Filter = {
             isHighlighted: true,
             isShown: true,
