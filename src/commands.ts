@@ -460,7 +460,7 @@ export function selectProject(
         g.isHighlighted = false;
         g.isShown = false;
         g.filters.forEach((f) => {
-          f.isHighlighted = false;
+          // f.isHighlighted = false; //TODO: I think this is not needed.
           f.isShown = false;
           f.iconPath = generateSvgUri(f.color, f.isHighlighted, f.isExclude);
         });
