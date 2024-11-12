@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 export type Filter = {
   isHighlighted: boolean; // if the matching lines will be highlighted
   isShown: boolean; //if the matching lines will be kept in focus mode
+  isExclude: boolean; // if the matching lines will be excluded
   regex: RegExp;
   color: string;
   id: string; //random generated number
@@ -34,10 +35,27 @@ export function generateRandomColor(): string {
 // this icon is stored as a dataUri.
 export function generateSvgUri(
   color: string,
-  isHighlighted: boolean
+  isHighlighted: boolean,
+  isExclude: boolean
 ): vscode.Uri {
-  const fullSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle fill="${color}" cx="50" cy="50" r="50"/></svg>`;
-  const emptySvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle stroke="${color}" fill="transparent" stroke-width="10" cx="50" cy="50" r="45"/></svg>`;
+  let fullSvg, emptySvg;
+
+  if (isExclude) {
+    // Do not enter sign - filled circle with white bar
+    fullSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <circle fill="${color}" cx="50" cy="50" r="50"/>
+      <rect x="10" y="40" width="80" height="20" fill="white"/>
+    </svg>`;
+    // Do not enter sign - outline only
+    emptySvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <circle stroke="${color}" fill="transparent" stroke-width="10" cx="50" cy="50" r="45"/>
+      <rect x="15" y="41" width="70" height="18" fill="${color}"/>
+    </svg>`;
+  } else {
+    fullSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle fill="${color}" cx="50" cy="50" r="50"/></svg>`;
+    emptySvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle stroke="${color}" fill="transparent" stroke-width="10" cx="50" cy="50" r="45"/></svg>`;
+  }
+
   const svgContent = isHighlighted ? fullSvg : emptySvg;
   const dataUri = `data:image/svg+xml;base64,${btoa(svgContent)}`;
   return vscode.Uri.parse(dataUri);
@@ -48,12 +66,12 @@ export function setStatusBarMessage(message: string) {
 }
 
 export function getProjectSelectedIndex(projects: Project[]): number {
-  const selectedIndex = projects.findIndex(p => p.selected);
+  const selectedIndex = projects.findIndex((p) => p.selected);
   return selectedIndex;
 }
 
 export function setProjectSelectedFlag(projects: Project[], index: number) {
-  projects.forEach(p => p.selected = false);
+  projects.forEach((p) => (p.selected = false));
 
   if (index >= 0 && index < projects.length) {
     projects[index].selected = true;

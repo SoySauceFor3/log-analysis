@@ -1,7 +1,14 @@
 import * as vscode from "vscode";
 import { State } from "./extension";
-import { generateRandomColor, generateSvgUri, setStatusBarMessage, getProjectSelectedIndex, setProjectSelectedFlag } from "./utils";
 import { readSettings, saveSettings } from "./settings";
+import {
+  Filter,
+  generateRandomColor,
+  generateSvgUri,
+  getProjectSelectedIndex,
+  setProjectSelectedFlag,
+  setStatusBarMessage,
+} from "./utils";
 
 export function applyHighlight(
   state: State,
@@ -21,7 +28,11 @@ export function applyHighlight(
         let filterCount = 0;
         //if filter's highlight is off, or this editor is in focus mode and filter is not shown, we don't want to put decorations
         //especially when a specific line fits more than one filter regex and some of them are shown while others are not.
-        if (filter.isHighlighted && (!editor.document.uri.toString().startsWith('focus:') || filter.isShown)) {
+        if (
+          filter.isHighlighted &&
+          (!editor.document.uri.toString().startsWith("focus:") ||
+            filter.isShown)
+        ) {
           let lineNumbers: number[] = [];
           for (let lineIdx = 0; lineIdx < sourceCodeArr.length; lineIdx++) {
             if (filter.regex.test(sourceCodeArr[lineIdx])) {
@@ -36,12 +47,10 @@ export function applyHighlight(
               new vscode.Position(lineIdx, 0) //position does not matter because isWholeLine is set to true
             );
           });
-          let decorationType = vscode.window.createTextEditorDecorationType(
-            {
-              backgroundColor: filter.color,
-              isWholeLine: true,
-            }
-          );
+          let decorationType = vscode.window.createTextEditorDecorationType({
+            backgroundColor: filter.color,
+            isWholeLine: true,
+          });
           //store the decoration type for future removal
           state.decorations.push(decorationType);
           editor.setDecorations(decorationType, decorationsArray);
@@ -62,13 +71,13 @@ export function setVisibility(
   state: State
 ) {
   const id = treeItem.id;
-  const group = state.groups.find(group => (group.id === id));
+  const group = state.groups.find((group) => group.id === id);
   if (group !== undefined) {
     group.isShown = isShown;
-    group.filters.map(filter => (filter.isShown = isShown));
+    group.filters.map((filter) => (filter.isShown = isShown));
   } else {
-    state.groups.map(group => {
-      const filter = group.filters.find(filter => (filter.id === id));
+    state.groups.map((group) => {
+      const filter = group.filters.find((filter) => filter.id === id);
       if (filter !== undefined) {
         filter.isShown = isShown;
       }
@@ -101,8 +110,10 @@ export function turnOnFocusMode(state: State) {
 }
 
 export function deleteFilter(treeItem: vscode.TreeItem, state: State) {
-  state.groups.map(group => {
-    const deleteIndex = group.filters.findIndex(filter => (filter.id === treeItem.id));
+  state.groups.map((group) => {
+    const deleteIndex = group.filters.findIndex(
+      (filter) => filter.id === treeItem.id
+    );
     if (deleteIndex !== -1) {
       group.filters.splice(deleteIndex, 1);
     }
@@ -111,29 +122,42 @@ export function deleteFilter(treeItem: vscode.TreeItem, state: State) {
 }
 
 export function addFilter(treeItem: vscode.TreeItem, state: State) {
+  // First show quick pick with choices
   vscode.window
-    .showInputBox({
-      prompt: "[FILTER] Type a regex to filter",
-      ignoreFocusOut: false,
+    .showQuickPick(["Add a filter", "Add an exclude filter"], {
+      placeHolder: "Select filter type",
     })
-    .then((regexStr) => {
-      if (regexStr === undefined) {
+    .then((selected) => {
+      if (!selected) {
         return;
       }
-      const group = state.groups.find(group => (group.id === treeItem.id));
-      const id = `${Math.random()}`;
-      const color = generateRandomColor();
-      const filter = {
-        isHighlighted: true,
-        isShown: true,
-        regex: new RegExp(regexStr),
-        color: color,
-        id,
-        iconPath: generateSvgUri(color, true),
-        count: 0,
-      };
-      group!.filters.push(filter);
-      refreshEditors(state);
+
+      vscode.window
+        .showInputBox({
+          prompt: "[FILTER] Type a regex for that filter",
+          ignoreFocusOut: false,
+        })
+        .then((regexStr) => {
+          if (!regexStr) {
+            return;
+          }
+          const group = state.groups.find((group) => group.id === treeItem.id);
+          const id = `${Math.random()}`;
+          const color = generateRandomColor();
+          const isExclude = selected === "Add an exclude filter";
+          const filter: Filter = {
+            isHighlighted: true,
+            isShown: true,
+            regex: new RegExp(regexStr),
+            color: color,
+            id,
+            iconPath: generateSvgUri(color, true, isExclude),
+            count: 0,
+            isExclude: isExclude,
+          };
+          group!.filters.push(filter);
+          refreshEditors(state);
+        });
     });
 }
 
@@ -148,8 +172,8 @@ export function editFilter(treeItem: vscode.TreeItem, state: State) {
         return;
       }
       const id = treeItem.id;
-      state.groups.map(group => {
-        const filter = group.filters.find(filter => (filter.id === id));
+      state.groups.map((group) => {
+        const filter = group.filters.find((filter) => filter.id === id);
         if (filter !== undefined) {
           filter.regex = new RegExp(regexStr);
         }
@@ -164,19 +188,27 @@ export function setHighlight(
   state: State
 ) {
   const id = treeItem.id;
-  const group = state.groups.find(group => (group.id === id));
+  const group = state.groups.find((group) => group.id === id);
   if (group !== undefined) {
     group.isHighlighted = isHighlighted;
-    group.filters.map(filter => {
+    group.filters.map((filter) => {
       filter.isHighlighted = isHighlighted;
-      filter.iconPath = generateSvgUri(filter.color, filter.isHighlighted);
+      filter.iconPath = generateSvgUri(
+        filter.color,
+        filter.isHighlighted,
+        filter.isExclude
+      );
     });
   } else {
-    state.groups.map(group => {
-      const filter = group.filters.find(filter => (filter.id === id));
+    state.groups.map((group) => {
+      const filter = group.filters.find((filter) => filter.id === id);
       if (filter !== undefined) {
         filter.isHighlighted = isHighlighted;
-        filter.iconPath = generateSvgUri(filter.color, filter.isHighlighted);;
+        filter.iconPath = generateSvgUri(
+          filter.color,
+          filter.isHighlighted,
+          filter.isExclude
+        );
       }
     });
   }
@@ -228,43 +260,49 @@ export function updateProjectTreeView(state: State) {
 }
 
 export function addGroup(state: State) {
-  vscode.window.showInputBox({
-    prompt: '[GROUP] Type a new group name',
-    ignoreFocusOut: false
-  }).then(name => {
-    if (name === undefined) {
-      return;
-    }
-    const id = `${Math.random()}`;
-    const group = {
-      filters: [],
-      isHighlighted: true,
-      isShown: true,
-      name: name,
-      id
-    };
-    state.groups.push(group);
-    refreshFilterTreeView(state);
-  });
+  vscode.window
+    .showInputBox({
+      prompt: "[GROUP] Type a new group name",
+      ignoreFocusOut: false,
+    })
+    .then((name) => {
+      if (name === undefined) {
+        return;
+      }
+      const id = `${Math.random()}`;
+      const group = {
+        filters: [],
+        isHighlighted: true,
+        isShown: true,
+        name: name,
+        id,
+      };
+      state.groups.push(group);
+      refreshFilterTreeView(state);
+    });
 }
 
 export function editGroup(treeItem: vscode.TreeItem, state: State) {
-  vscode.window.showInputBox({
-    prompt: "[GROUP] Type a new group name",
-    ignoreFocusOut: false
-  }).then(name => {
-    if (name === undefined) {
-      return;
-    }
-    const id = treeItem.id;
-    const group = state.groups.find(group => (group.id === id));
-    group!.name = name;
-    refreshFilterTreeView(state);
-  });
+  vscode.window
+    .showInputBox({
+      prompt: "[GROUP] Type a new group name",
+      ignoreFocusOut: false,
+    })
+    .then((name) => {
+      if (name === undefined) {
+        return;
+      }
+      const id = treeItem.id;
+      const group = state.groups.find((group) => group.id === id);
+      group!.name = name;
+      refreshFilterTreeView(state);
+    });
 }
 
 export function deleteGroup(treeItem: vscode.TreeItem, state: State) {
-  const deleteIndex = state.groups.findIndex(group => (group.id === treeItem.id));
+  const deleteIndex = state.groups.findIndex(
+    (group) => group.id === treeItem.id
+  );
   if (deleteIndex !== -1) {
     state.groups.splice(deleteIndex, 1);
   }
@@ -273,13 +311,13 @@ export function deleteGroup(treeItem: vscode.TreeItem, state: State) {
 
 export function saveProject(state: State) {
   if (state.groups.length === 0) {
-    vscode.window.showErrorMessage('There is no filter groups');
+    vscode.window.showErrorMessage("There is no filter groups");
     return;
   }
 
-  const selected = state.projects.find(p => (p.selected === true));
+  const selected = state.projects.find((p) => p.selected === true);
   if (selected === undefined) {
-    vscode.window.showErrorMessage('There is no selected project');
+    vscode.window.showErrorMessage("There is no selected project");
     return;
   }
 
@@ -290,28 +328,34 @@ export function saveProject(state: State) {
 }
 
 export function addProject(state: State) {
-  vscode.window.showInputBox({
-    prompt: "[PROJECT] Type a new project name",
-    ignoreFocusOut: false
-  }).then(name => {
-    if (name === undefined) {
-      return;
-    }
+  vscode.window
+    .showInputBox({
+      prompt: "[PROJECT] Type a new project name",
+      ignoreFocusOut: false,
+    })
+    .then((name) => {
+      if (name === undefined) {
+        return;
+      }
 
-    const project = {
-      groups: [],
-      name,
-      id: `${Math.random()}`,
-      selected: false
-    };
+      const project = {
+        groups: [],
+        name,
+        id: `${Math.random()}`,
+        selected: false,
+      };
 
-    state.projects.push(project);
-    saveSettings(state.globalStorageUri, state.projects);
-    updateProjectTreeView(state);
-  });
+      state.projects.push(project);
+      saveSettings(state.globalStorageUri, state.projects);
+      updateProjectTreeView(state);
+    });
 }
 
-export function editProject(treeItem: vscode.TreeItem, state: State, callback: () => void) {
+export function editProject(
+  treeItem: vscode.TreeItem,
+  state: State,
+  callback: () => void
+) {
   vscode.window
     .showInputBox({
       prompt: "[PROJECT] Type a new name",
@@ -321,7 +365,9 @@ export function editProject(treeItem: vscode.TreeItem, state: State, callback: (
       if (name === undefined) {
         return;
       }
-      const findIndex = state.projects.findIndex(project => (project.id === treeItem.id));
+      const findIndex = state.projects.findIndex(
+        (project) => project.id === treeItem.id
+      );
       if (findIndex !== -1) {
         state.projects[findIndex].name = name;
         saveSettings(state.globalStorageUri, state.projects);
@@ -334,7 +380,9 @@ export function editProject(treeItem: vscode.TreeItem, state: State, callback: (
 
 export function deleteProject(treeItem: vscode.TreeItem, state: State) {
   const selectedIndex = getProjectSelectedIndex(state.projects);
-  const deleteIndex = state.projects.findIndex(project => (project.id === treeItem.id));
+  const deleteIndex = state.projects.findIndex(
+    (project) => project.id === treeItem.id
+  );
   if (deleteIndex !== -1) {
     if (deleteIndex === selectedIndex) {
       state.groups = [];
@@ -355,7 +403,7 @@ function createDefaultProject(state: State) {
       groups: [],
       name,
       id: `${Math.random()}`,
-      selected: false
+      selected: false,
     };
 
     state.projects.unshift(project);
@@ -393,23 +441,28 @@ export function refreshSettings(state: State) {
   refreshEditors(state);
 }
 
-export function selectProject(treeItem: vscode.TreeItem, state: State): boolean {
+export function selectProject(
+  treeItem: vscode.TreeItem,
+  state: State
+): boolean {
   const prevSelectedIndex = getProjectSelectedIndex(state.projects);
-  const newSelectedIndex = state.projects.findIndex(p => p.id === treeItem.id);
+  const newSelectedIndex = state.projects.findIndex(
+    (p) => p.id === treeItem.id
+  );
   if (newSelectedIndex !== -1) {
     if (prevSelectedIndex === newSelectedIndex) {
-      vscode.window.showInformationMessage('This project is already selected');
+      vscode.window.showInformationMessage("This project is already selected");
       return true;
     }
-    state.projects.forEach(p => {
+    state.projects.forEach((p) => {
       p.selected = false;
-      p.groups.forEach(g => {
+      p.groups.forEach((g) => {
         g.isHighlighted = false;
         g.isShown = false;
-        g.filters.forEach(f => {
+        g.filters.forEach((f) => {
           f.isHighlighted = false;
           f.isShown = false;
-          f.iconPath = generateSvgUri(f.color, f.isHighlighted);
+          f.iconPath = generateSvgUri(f.color, f.isHighlighted, f.isExclude);
         });
       });
     });
@@ -425,11 +478,14 @@ export function selectProject(treeItem: vscode.TreeItem, state: State): boolean 
   return false;
 }
 
-export function updateExplorerTitle(view: vscode.TreeView<vscode.TreeItem>, state: State) {
+export function updateExplorerTitle(
+  view: vscode.TreeView<vscode.TreeItem>,
+  state: State
+) {
   const selectedIndex = getProjectSelectedIndex(state.projects);
   if (selectedIndex === -1) {
-    view.title = 'Filters';
+    view.title = "Filters";
   } else {
-    view.title = 'Filters (' + state.projects[selectedIndex].name + ')';
+    view.title = "Filters (" + state.projects[selectedIndex].name + ")";
   }
 }
